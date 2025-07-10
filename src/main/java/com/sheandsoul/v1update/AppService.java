@@ -12,6 +12,8 @@ import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.repository.ProfileRepository;
 import com.sheandsoul.v1update.repository.UserRepository;
+import com.sheandsoul.v1update.services.EmailService;
+import com.sheandsoul.v1update.services.OtpGenerationService;
 
 @Service
 public class AppService {
@@ -19,12 +21,16 @@ public class AppService {
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final ReferralCodeService referralCodeService;
+    private final OtpGenerationService otpGenerationService;
+    private final EmailService emailService;
 
-    public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService) {
+    public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService, OtpGenerationService otpGenerationService, EmailService emailService) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.referralCodeService = referralCodeService;
+        this.otpGenerationService = otpGenerationService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -35,7 +41,54 @@ public class AppService {
         User newUser = new User();
         newUser.setEmail(request.email());
         newUser.setPassword(passwordEncoder.encode(request.password()));
-        return userRepository.save(newUser);
+        newUser.setEmailVerified(false);
+
+        User savedUser = userRepository.save(newUser);
+
+        String otp = otpGenerationService.generateOtp();
+        otpGenerationService.storeOtp(savedUser.getEmail(), otp);
+        emailService.sendOtpEmail(savedUser.getEmail(), otp);
+
+        return savedUser;
+        
+    }
+
+    @Transactional
+    public void verifyEmail(String email, String submittedOtp){
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+        
+        if(user.isEmailVerified()) {
+            throw new IllegalStateException("Email is already verified.");
+        }
+
+        String cachedOtp = otpGenerationService.getOtp(email);
+        if (cachedOtp == null || !cachedOtp.equals(submittedOtp)) {
+            throw new IllegalArgumentException("Invalid or expired OTP.");
+        }
+
+        if(otpGenerationService.isOtpExpired(email)) {
+            throw new IllegalArgumentException("OTP has expired. Please request a new one.");
+        }
+
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        otpGenerationService.clearOtp(email);
+    }
+
+    @Transactional
+    public void resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+
+        if (user.isEmailVerified()) {
+            throw new IllegalStateException("Email is already verified.");
+        }
+
+        String otp = otpGenerationService.generateOtp();
+        otpGenerationService.storeOtp(user.getEmail(), otp);
+        emailService.sendOtpEmail(user.getEmail(), otp);
     }
 
     @Transactional

@@ -24,6 +24,8 @@ public class User {
     private String email;
     @Column(nullable = false)
     private String password;
+    @Column(name = "is_email_verified")
+    private boolean isEmailVerified = false;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Profile profile;

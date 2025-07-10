@@ -14,6 +14,7 @@ import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.ProfileRequest;
 import com.sheandsoul.v1update.dto.ProfileResponse;
 import com.sheandsoul.v1update.dto.SignUpRequest;
+import com.sheandsoul.v1update.dto.VerifyEmailRequest;
 import com.sheandsoul.v1update.entities.User;
 
 import jakarta.validation.Valid;
@@ -39,6 +40,26 @@ public class AppController {
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@Valid @RequestBody VerifyEmailRequest request){
+        try{
+            appService.verifyEmail(request.email(), request.otp());
+            return ResponseEntity.ok(Map.of("message", "Email verified successfully!"));
+        }catch(IllegalArgumentException | IllegalStateException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(@Valid @RequestBody VerifyEmailRequest request) {
+        try{
+            appService.resendOtp(request.email());
+            return ResponseEntity.ok(Map.of("message", "OTP resent successfully!"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 
