@@ -6,7 +6,6 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 import com.sheandsoul.v1update.entities.ChatMessage;
-import com.sheandsoul.v1update.services.GeminiService;
 import com.sheandsoul.v1update.services.NlpService;
 
 @Controller
@@ -14,9 +13,6 @@ public class ChatController {
 
     @Autowired
     private NlpService nlpService;
-
-    @Autowired
-    private GeminiService geminiService;
 
     @MessageMapping("/chat.sendMessage") // Listens for messages from /app/chat.sendMessage
     @SendTo("/topic/public") // Broadcasts the return value to all subscribers of /topic/public

@@ -240,5 +240,13 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
         return profileRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
     }
+
+    public Profile updateUserLanguage(Long userId, String languageCode) {
+        Profile profile = profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+
+        profile.setLanguageCode(languageCode);
+        return profileRepository.save(profile);
+    }
     
 }

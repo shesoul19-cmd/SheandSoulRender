@@ -20,7 +20,6 @@ import com.sheandsoul.v1update.dto.ProfileResponse;
 import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
-import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
 
@@ -110,7 +109,21 @@ public class AppController {
             MenstrualTrackingDto updatedProfile = appService.updateMenstrualData(userId, menstrualDataDto);
 
     return ResponseEntity.ok(Map.of("message", "Menstrual data updated successfully!", "profile", updatedProfile));
+    }
+
+    @PutMapping("/user/{userId}/language")
+    public ResponseEntity<?> setUserLanguage(@PathVariable Long userId, @RequestBody Map<String, String> payload) {
+        String languageCode = payload.get("languageCode");
+        if (languageCode == null || languageCode.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "languageCode field is required."));
         }
+
+        // Note: You will need to implement the updateUserLanguage method in your AppService.
+        // This method should find the user's profile and update its language_code field.
+        appService.updateUserLanguage(userId, languageCode);
+        
+        return ResponseEntity.ok(Map.of("message", "User language updated successfully to " + languageCode));
+    }
 
 
     @PostMapping("/login")

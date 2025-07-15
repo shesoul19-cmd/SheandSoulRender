@@ -59,6 +59,8 @@ public class Profile {
     private LocalDate lastPeriodStartDate;
     private LocalDate lastPeriodEndDate;
 
+    private String languageCode;
+
 
 
     public enum UserType {
