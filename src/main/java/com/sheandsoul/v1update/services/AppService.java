@@ -235,5 +235,10 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
 
         return prediction;
     }
+
+    public Profile findProfileByUserId(Long userId) {
+        return profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+    }
     
 }
