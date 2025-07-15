@@ -1,19 +1,22 @@
-package com.sheandsoul.v1update;
+package com.sheandsoul.v1update.services;
+
+import java.time.LocalDate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sheandsoul.v1update.dto.CyclePredictionDto;
 import com.sheandsoul.v1update.dto.LoginRequest;
+import com.sheandsoul.v1update.dto.MenstrualTrackingDto;
 import com.sheandsoul.v1update.dto.ProfileRequest;
 import com.sheandsoul.v1update.dto.ProfileResponse;
+import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.repository.ProfileRepository;
 import com.sheandsoul.v1update.repository.UserRepository;
-import com.sheandsoul.v1update.services.EmailService;
-import com.sheandsoul.v1update.services.OtpGenerationService;
 
 @Service
 public class AppService {
@@ -173,5 +176,64 @@ public class AppService {
     return user;
 }
 
+public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+    }
 
+    public ProfileServiceDto updateUserService(Long userId, ProfileServiceDto profileServiceDto) {
+        Profile profile = profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+
+        profile.setEnableMenstrualService(profileServiceDto.isMenstrualServiceEnabled());
+        profile.setEnableBreastCancerService(profileServiceDto.isBreastCancerServiceEnabled());
+
+        Profile savedProfile = profileRepository.save(profile);
+        return profileServiceDto;
+    }
+
+    @Transactional
+public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
+    Profile profile = profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+
+    profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
+    profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
+    profile.setPeriodLength(updateDto.getPeriodLength());
+    profile.setCycleLength(updateDto.getCycleLength());
+    Profile savedProfile =  profileRepository.save(profile);
+    return updateDto;
+    
+}
+    public CyclePredictionDto predictNextCycle(Long userId){
+        Profile profile = profileRepository.findByUserId(userId)
+               .orElseThrow(() -> new IllegalArgumentException("Profile not found for user Id : " + userId));
+        
+        LocalDate lastPeriodDate = profile.getLastPeriodStartDate();
+        Integer cycleLength = profile.getCycleLength();
+        Integer periodLength = profile.getPeriodLength();
+
+        if(lastPeriodDate == null || cycleLength ==  null  || periodLength == null) {
+            throw new IllegalArgumentException("Insufficient data to predict next cycle.");
+        }
+
+        LocalDate nextPeriodStartDate = lastPeriodDate.plusDays(cycleLength);
+        LocalDate followingPeriodStartDate = nextPeriodStartDate.plusDays(cycleLength);
+        LocalDate nextOvulationDate = followingPeriodStartDate.minusDays(14); 
+
+        CyclePredictionDto prediction = new CyclePredictionDto();
+        prediction.setNextPeriodStartDate(nextPeriodStartDate);
+        prediction.setNextPeriodEndDate(nextPeriodStartDate.plusDays(periodLength - 1));
+        prediction.setNextFollicularStartDate(nextPeriodStartDate);
+        prediction.setNextFollicularEndDate(nextOvulationDate);
+        prediction.setNextOvulationDate(nextOvulationDate);
+        prediction.setNextOvulationEndDate(nextOvulationDate.plusDays(1));
+        prediction.setNextLutealStartDate(nextOvulationDate.plusDays(1));
+        prediction.setNextLutealEndDate(nextOvulationDate.plusDays(14));
+        prediction.setNextFertileWindowStartDate(nextOvulationDate.minusDays(5));
+        prediction.setNextFertileWindowEndDate(nextOvulationDate.plusDays(1));
+
+        return prediction;
+    }
+    
 }

@@ -95,9 +95,6 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-
-
-
 		 <dependency>
         <groupId>io.jsonwebtoken</groupId>
         <artifactId>jjwt-api</artifactId>

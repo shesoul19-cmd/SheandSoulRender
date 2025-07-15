@@ -1,4 +1,4 @@
-package com.sheandsoul.v1update;
+package com.sheandsoul.v1update.services;
 
 import java.security.SecureRandom;
 import java.util.Base64;

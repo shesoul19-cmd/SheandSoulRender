@@ -1,5 +1,9 @@
 package com.sheandsoul.v1update.entities;
 
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -40,9 +44,20 @@ public class Profile {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
+    @JsonManagedReference
     private User user;
 
+    @Column(name = "menstrual_service")
+    private boolean enableMenstrualService;
 
+    @Column(name = "breast_cancer_service")
+    private boolean enableBreastCancerService;
+
+    private Integer periodLength;
+    private Integer cycleLength;
+
+    private LocalDate lastPeriodStartDate;
+    private LocalDate lastPeriodEndDate;
 
 
 

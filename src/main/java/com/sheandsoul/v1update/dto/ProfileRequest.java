@@ -10,6 +10,8 @@ public record ProfileRequest(
     @NotBlank String name,
     String nickname,
     @NotNull UserType userType,
+
+    @NotNull String preferredLanguage, // New field for preferred language
     // Fields for SELF_USE
     Integer age,
     Double weight,
