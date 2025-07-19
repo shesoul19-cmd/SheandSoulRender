@@ -51,7 +51,6 @@ public class TranslationService {
             case "ml": return "Malayalam";
             case "pa": return "Punjabi";
             case "ur": return "Urdu";
-            case "mal" : return "Malayalam";
             case "nep" : return "Nepali";
             case "mn": return "Manipuri";
             case "or": return "Odia";

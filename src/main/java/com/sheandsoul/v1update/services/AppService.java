@@ -95,10 +95,7 @@ public class AppService {
     }
 
     @Transactional
-    public ProfileResponse createProfile(ProfileRequest request) {
-        User user = userRepository.findById(request.userId())
-            .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.userId()));
-
+    public ProfileResponse createProfile(ProfileRequest request, User user) {
         if (user.getProfile() != null) {
             throw new IllegalStateException("User already has a profile.");
         }
@@ -110,21 +107,17 @@ public class AppService {
         profile.setUserType(request.userType());
 
         if (request.userType() == Profile.UserType.USER) {
-            // Logic for self-use user
             profile.setAge(request.age());
             profile.setHeight(request.height());
             profile.setWeight(request.weight());
             
-            // **FIX**: Use saveAndFlush to save the profile and guarantee the ID is generated immediately.
             Profile savedProfile = profileRepository.saveAndFlush(profile);
             
-            // Now savedProfile.getId() is guaranteed to be non-null.
             String newCode;
             do {
                 newCode = referralCodeService.generateCode(savedProfile.getId());
             } while (profileRepository.existsByReferralCode(newCode));
 
-            // Set the code. JPA will handle the final update when the transaction commits.
             savedProfile.setReferralCode(newCode);
             
             return new ProfileResponse(
@@ -137,7 +130,6 @@ public class AppService {
             );
 
         } else if (request.userType() == Profile.UserType.PARTNER) {
-            // Logic for partner-use user
             if (request.referredByCode() == null || request.referredByCode().isBlank()) {
                 throw new IllegalArgumentException("Referral code is required for partner use.");
             }
@@ -158,7 +150,6 @@ public class AppService {
             );
         }
         
-        // This line should not be reachable if usageType is always valid.
         throw new IllegalStateException("Invalid usage type specified.");
     }
 

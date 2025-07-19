@@ -23,7 +23,7 @@ public class NlpService {
 
     public String processMessage(String userText, Long userId) {
         Profile userProfile = appService.findProfileByUserId(userId);
-        String userName = userProfile.getName();
+        String userName = userProfile.getNickName();
 
         String intent = classifyIntent(userText);
 
@@ -81,8 +81,8 @@ public class NlpService {
 
             return String.format(
                 "Of course, %s! Based on your data, here is your next cycle prediction:\n\n" +
-                "🔹 **Next Period:** Starts %s and ends around %s.\n" +
-                "🔹 **Most Fertile Window:** Between %s and %s.",
+                "🔹 Next Period: Starts %s and ends around %s.\n" +
+                "🔹 Most Fertile Window: Between %s and %s.",
                 userName,
                 prediction.getNextPeriodStartDate().format(formatter),
                 prediction.getNextPeriodEndDate().format(formatter),

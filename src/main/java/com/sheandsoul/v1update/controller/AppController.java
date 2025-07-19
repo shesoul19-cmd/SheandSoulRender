@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,7 @@ import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
+import com.sheandsoul.v1update.services.MyUserDetailService;
 
 import jakarta.validation.Valid;
 
@@ -30,19 +32,22 @@ import jakarta.validation.Valid;
 public class AppController {
 
     private final AppService appService;
+    private final MyUserDetailService userDetailsService;
 
-    public AppController(AppService appService) {
+    public AppController(AppService appService, MyUserDetailService userDetailsService) {
         this.appService = appService;
+        this.userDetailsService = userDetailsService;
     }
 
-    @GetMapping("/next-period/{userId}")
-    public ResponseEntity<?> getNextPeriod(@PathVariable Long userId) {
+    @GetMapping("/next-period/me")
+    public ResponseEntity<?> getNextPeriod(Authentication authentication) {
         try {
-        CyclePredictionDto prediction = appService.predictNextCycle(userId);
-        return ResponseEntity.ok(prediction);
-    } catch (Exception e) {
-        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-    }
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            CyclePredictionDto prediction = appService.predictNextCycle(currentUser.getId());
+            return ResponseEntity.ok(prediction);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/signup")
@@ -80,48 +85,47 @@ public class AppController {
     }
 
     @PostMapping("/profile")
-    public ResponseEntity<?> setupProfile(@Valid @RequestBody ProfileRequest profileRequest) {
+    public ResponseEntity<?> setupProfile(@Valid @RequestBody ProfileRequest profileRequest, Authentication authentication) {
         try {
-            ProfileResponse response = appService.createProfile(profileRequest);
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            // You might need to adjust ProfileRequest to not require a userId, or set it here
+            // For now, let's assume the service can handle it or be adapted.
+            ProfileResponse response = appService.createProfile(profileRequest, currentUser); // Modified service method
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 
-    @PutMapping("/user/{userId}/services")
+    @PutMapping("/user/me/services")
     public ResponseEntity<?> updateUserServices(
-        @PathVariable Long userId, 
-        @Valid @RequestBody ProfileServiceDto updateServicesDto) {
+        @Valid @RequestBody ProfileServiceDto updateServicesDto, 
+        Authentication authentication) {
     try {
-        ProfileServiceDto updatedProfile = appService.updateUserService(userId, updateServicesDto); // Pass the correct ID
-        return ResponseEntity.ok(Map.of("message", "Services updated successfully!", "profile", updatedProfile));
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-    }
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            appService.updateUserService(currentUser.getId(), updateServicesDto);
+            return ResponseEntity.ok(Map.of("message", "Services updated successfully!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
 }
-    @PutMapping("/user/{userId}/menstrual-data")
+    @PutMapping("/user/me/menstrual-data")
     public ResponseEntity<?> updateMenstrualEntity(
-        @PathVariable Long userId, 
-        @Valid @RequestBody MenstrualTrackingDto menstrualDataDto) {
-            MenstrualTrackingDto updatedProfile = appService.updateMenstrualData(userId, menstrualDataDto);
-
-    return ResponseEntity.ok(Map.of("message", "Menstrual data updated successfully!", "profile", updatedProfile));
+        @Valid @RequestBody MenstrualTrackingDto menstrualDataDto
+        , Authentication authentication) {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+        appService.updateMenstrualData(currentUser.getId(), menstrualDataDto);
+        return ResponseEntity.ok(Map.of("message", "Menstrual data updated successfully!"));
     }
 
-    @PutMapping("/user/{userId}/language")
-    public ResponseEntity<?> setUserLanguage(@PathVariable Long userId, @RequestBody Map<String, String> payload) {
+    @PutMapping("/user/me/language")
+    public ResponseEntity<?> setUserLanguage(@RequestBody Map<String, String> payload, Authentication authentication) {
         String languageCode = payload.get("languageCode");
         if (languageCode == null || languageCode.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "languageCode field is required."));
         }
-
-        // Note: You will need to implement the updateUserLanguage method in your AppService.
-        // This method should find the user's profile and update its language_code field.
-        appService.updateUserLanguage(userId, languageCode);
-        
+        User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+        appService.updateUserLanguage(currentUser.getId(), languageCode);
         return ResponseEntity.ok(Map.of("message", "User language updated successfully to " + languageCode));
     }
 

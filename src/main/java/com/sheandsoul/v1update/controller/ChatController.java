@@ -3,9 +3,13 @@ package com.sheandsoul.v1update.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
 import com.sheandsoul.v1update.entities.ChatMessage;
+import com.sheandsoul.v1update.entities.User;
+import com.sheandsoul.v1update.services.MyUserDetailService;
 import com.sheandsoul.v1update.services.NlpService;
 
 @Controller
@@ -14,16 +18,30 @@ public class ChatController {
     @Autowired
     private NlpService nlpService;
 
-    @MessageMapping("/chat.sendMessage") // Listens for messages from /app/chat.sendMessage
-    @SendTo("/topic/public") // Broadcasts the return value to all subscribers of /topic/public
-    public ChatMessage sendMessage(ChatMessage chatMessage) throws Exception {
-        // Show typing indicator logic would go here if desired
-        Long userId = 1L; // Replace with actual user ID logic, e.g., from session or security context
-        // Get the AI's response
+    @Autowired
+    private MyUserDetailService myUserDetailsService;
+
+    @MessageMapping("/chat.sendMessage")
+    @SendTo("/topic/public")
+    public ChatMessage sendMessage(ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) throws Exception {
+        
+        // 1. Securely get the user's identity from the WebSocket session
+        Authentication authentication = (Authentication) headerAccessor.getUser();
+
+        if (authentication == null) {
+            // This case should ideally not be reached if security is configured correctly
+            return new ChatMessage("AI", "Error: You are not authenticated.");
+        }
+
+        // 2. Get the user's email and find their full profile to get the ID
+        String userEmail = authentication.getName();
+        User currentUser = myUserDetailsService.findUserByEmail(userEmail);
+        Long userId = currentUser.getId();
+
+        // 3. Process the message using the dynamic, authenticated user ID
         String aiResponseText = nlpService.processMessage(chatMessage.getText(), userId);
         
-        // Return the AI's response message
+        // 4. Return the AI's response message
         return new ChatMessage("AI", aiResponseText);
     }
-
 }
