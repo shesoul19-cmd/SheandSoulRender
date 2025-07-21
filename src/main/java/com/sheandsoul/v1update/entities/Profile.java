@@ -1,8 +1,12 @@
 package com.sheandsoul.v1update.entities;
 
 import java.time.LocalDate;
+import java.util.Map;
+
+import org.hibernate.annotations.Type;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,10 +64,13 @@ public class Profile {
     private LocalDate lastPeriodEndDate;
 
     private String languageCode;
-
-
-
     public enum UserType {
         USER, PARTNER
     }
+    @Type(JsonType.class)
+    @Column(name = "risk_assessment_mcq_data", columnDefinition = "jsonb")
+    private Map<String, String> riskAssessmentMcqData;
+
+    @Column(name = "breast_cancer_risk_level")
+    private String breastCancerRiskLevel;
 }

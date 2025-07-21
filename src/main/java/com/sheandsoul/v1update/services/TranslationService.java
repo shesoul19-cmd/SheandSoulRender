@@ -21,8 +21,6 @@ public class TranslationService {
 
         String targetLanguageName = convertCodeToName(targetLanguageCode);
         String cacheKey = String.format("en:%s:%s", targetLanguageCode, text);
-
-        // Return from cache if available
         if (cache.containsKey(cacheKey)) {
             return cache.get(cacheKey);
         }

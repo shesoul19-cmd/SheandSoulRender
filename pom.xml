@@ -119,6 +119,14 @@
         <scope>runtime</scope>
     </dependency>
 
+	<!-- For JSONB support with PostgreSQL -->
+<dependency>
+    <groupId>com.vladmihalcea</groupId>
+    <artifactId>hibernate-types-60</artifactId>
+    <version>2.21.1</version> <!-- Use version compatible with your Hibernate -->
+</dependency>
+
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

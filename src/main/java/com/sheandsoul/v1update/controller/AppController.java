@@ -1,12 +1,12 @@
 package com.sheandsoul.v1update.controller;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,11 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
 import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.MenstrualTrackingDto;
+import com.sheandsoul.v1update.dto.PartnerDataDto;
 import com.sheandsoul.v1update.dto.ProfileRequest;
 import com.sheandsoul.v1update.dto.ProfileResponse;
 import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
+import com.sheandsoul.v1update.entities.SymptomLocation;
+import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
@@ -37,6 +40,21 @@ public class AppController {
     public AppController(AppService appService, MyUserDetailService userDetailsService) {
         this.appService = appService;
         this.userDetailsService = userDetailsService;
+    }
+    @GetMapping("/partner")
+    public ResponseEntity<?> getPartnerData(Authentication authentication) {
+       try {
+            // 1. Identify the logged-in partner from their JWT
+            User partnerUser = userDetailsService.findUserByEmail(authentication.getName());
+            
+            // 2. Call the service to fetch the linked user's data
+            PartnerDataDto partnerData = appService.getPartnerData(partnerUser.getId());
+            
+            // 3. Return the data
+            return ResponseEntity.ok(partnerData);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/next-period/me")
@@ -97,7 +115,7 @@ public class AppController {
         }
     }
 
-    @PutMapping("/user/me/services")
+    @PutMapping("/services")
     public ResponseEntity<?> updateUserServices(
         @Valid @RequestBody ProfileServiceDto updateServicesDto, 
         Authentication authentication) {
@@ -108,7 +126,9 @@ public class AppController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
-}
+    }
+
+
     @PutMapping("/user/me/menstrual-data")
     public ResponseEntity<?> updateMenstrualEntity(
         @Valid @RequestBody MenstrualTrackingDto menstrualDataDto
@@ -118,7 +138,7 @@ public class AppController {
         return ResponseEntity.ok(Map.of("message", "Menstrual data updated successfully!"));
     }
 
-    @PutMapping("/user/me/language")
+    @PutMapping("/language")
     public ResponseEntity<?> setUserLanguage(@RequestBody Map<String, String> payload, Authentication authentication) {
         String languageCode = payload.get("languageCode");
         if (languageCode == null || languageCode.trim().isEmpty()) {
@@ -145,5 +165,36 @@ public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
     }
 }
+
+   @PostMapping("/breast-health")
+    public ResponseEntity<?> logBreastCancerSelfExam(@RequestBody Map<String, String> rawSymptoms, Authentication authentication) {
+        try {
+            Map<SymptomLocation, SymptomSide> symptoms = rawSymptoms.entrySet().stream()
+                .collect(Collectors.toMap(
+                    entry -> SymptomLocation.valueOf(entry.getKey().toUpperCase()),
+                    entry -> SymptomSide.valueOf(entry.getValue().toUpperCase())
+                ));
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            appService.createBreastCancerExamLog(currentUser.getId(), symptoms);
+            return ResponseEntity.ok(Map.of("message", "Detailed self-exam log saved successfully."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid symptom location or side provided."));
+        }
+    }
+
+    @PostMapping("/mcq-assessment")
+    public ResponseEntity<?> submitMcqRiskAssessment(@RequestBody Map<String, String> answers, Authentication authentication) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            String riskLevel = appService.processMcqRiskAssesment(currentUser.getId(), answers);
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Assessment completed successfully.",
+                "riskLevel", riskLevel
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 
 }

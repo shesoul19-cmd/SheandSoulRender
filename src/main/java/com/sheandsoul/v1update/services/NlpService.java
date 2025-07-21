@@ -1,7 +1,8 @@
 package com.sheandsoul.v1update.services;
 
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
-import com.sheandsoul.v1update.entities.Profile; // Make sure to import your Profile entity
+import com.sheandsoul.v1update.entities.Profile; 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -106,4 +107,3 @@ public class NlpService {
         return geminiService.getGeminiResponse(personalizedPrompt);
     }
 }
-

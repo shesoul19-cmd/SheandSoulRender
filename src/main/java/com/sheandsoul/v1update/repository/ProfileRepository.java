@@ -6,11 +6,11 @@ import com.sheandsoul.v1update.entities.Profile;
 import java.util.Optional;
 
 
+
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
     boolean existsByReferralCode(String referralCode);
 
     Optional<Profile> findByReferralCode(String referralCode);
     Optional<Profile> findByUserId(Long userId);
-
 }
