@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class TranslationService {
 
+    
+
     @Autowired
     private GeminiService geminiService;
 

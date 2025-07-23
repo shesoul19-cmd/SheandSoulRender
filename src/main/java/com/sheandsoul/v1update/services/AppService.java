@@ -22,6 +22,7 @@ import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
+import com.sheandsoul.v1update.entities.UserServiceType;
 import com.sheandsoul.v1update.repository.BreastCancerSelfExamLogRepository;
 import com.sheandsoul.v1update.repository.ProfileRepository;
 import com.sheandsoul.v1update.repository.UserRepository;
@@ -120,6 +121,7 @@ public class AppService {
             profile.setAge(request.age());
             profile.setHeight(request.height());
             profile.setWeight(request.weight());
+            profile.setPreferredServiceType(request.preferredServiceType());
             
             Profile savedProfile = profileRepository.saveAndFlush(profile);
             
@@ -157,7 +159,7 @@ public class AppService {
                 savedProfile.getName(),
                 user.getEmail(),
                 savedProfile.getUserType(),
-                savedProfile.getReferralCode() // This will be null for partner users
+                savedProfile.getReferralCode()
             );
         }
         
@@ -184,14 +186,16 @@ public User getUserById(Long userId) {
     }
 
     public ProfileServiceDto updateUserService(Long userId, ProfileServiceDto profileServiceDto) {
-        Profile profile = profileRepository.findByUserId(userId)
+    // 1. Find the profile by user ID or throw an exception if not found
+    Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-        profile.setEnableMenstrualService(profileServiceDto.isMenstrualServiceEnabled());
-        profile.setEnableBreastCancerService(profileServiceDto.isBreastCancerServiceEnabled());
-        profileRepository.save(profile);
-        return profileServiceDto;
-    }
+    UserServiceType newServiceType = profileServiceDto.getPreferredServiceType();
+    profile.setPreferredServiceType(newServiceType);
+    Profile updatedProfile = profileRepository.save(profile);
+    return new ProfileServiceDto(updatedProfile.getPreferredServiceType());
+}
+
 
     @Transactional
 public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {

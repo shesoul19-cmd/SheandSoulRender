@@ -1,47 +1,64 @@
 package com.sheandsoul.v1update.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import java.time.LocalDateTime;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.sheandsoul.v1update.entities.ChatMessage;
+import com.sheandsoul.v1update.dto.ChatRequest;
+import com.sheandsoul.v1update.dto.ChatResponse;
+import com.sheandsoul.v1update.entities.ChatHistory;
 import com.sheandsoul.v1update.entities.User;
+import com.sheandsoul.v1update.repository.ChatHistoryRepository;
+import com.sheandsoul.v1update.services.GeminiService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
-import com.sheandsoul.v1update.services.NlpService;
 
-@Controller
+@RestController
+@RequestMapping("/api/chat")
 public class ChatController {
 
-    @Autowired
-    private NlpService nlpService;
 
-    @Autowired
-    private MyUserDetailService myUserDetailsService;
+    private final ChatHistoryRepository chatHistoryRepository;
 
-    @MessageMapping("/chat.sendMessage")
-    @SendTo("/topic/public")
-    public ChatMessage sendMessage(ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) throws Exception {
-        
-        // 1. Securely get the user's identity from the WebSocket session
-        Authentication authentication = (Authentication) headerAccessor.getUser();
+    private final GeminiService geminiService;
+    private final MyUserDetailService userDetailsService;
 
-        if (authentication == null) {
-            // This case should ideally not be reached if security is configured correctly
-            return new ChatMessage("AI", "Error: You are not authenticated.");
-        }
-
-        // 2. Get the user's email and find their full profile to get the ID
-        String userEmail = authentication.getName();
-        User currentUser = myUserDetailsService.findUserByEmail(userEmail);
-        Long userId = currentUser.getId();
-
-        // 3. Process the message using the dynamic, authenticated user ID
-        String aiResponseText = nlpService.processMessage(chatMessage.getText(), userId);
-        
-        // 4. Return the AI's response message
-        return new ChatMessage("AI", aiResponseText);
+    public ChatController(GeminiService geminiService, MyUserDetailService userDetailsService, ChatHistoryRepository chatHistoryRepository){
+        this.chatHistoryRepository = chatHistoryRepository;
+        this.geminiService = geminiService;
+        this.userDetailsService = userDetailsService;
     }
+
+    @PostMapping
+    public ResponseEntity<?> chat(@RequestBody ChatRequest request, Authentication auth) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(auth.getName());
+
+            if (currentUser == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "User profile not found. Please create a profile first."));
+            }
+
+            // Delegate the entire logic to the AssistantService
+            String aiResponse =geminiService.getGeminiResponse(currentUser, request.getMessage());
+            ChatHistory chatHistory = new ChatHistory();
+        chatHistory.setUser(currentUser);
+        chatHistory.setUserMessage(request.getMessage());
+        chatHistory.setBotResponse(aiResponse);
+        chatHistory.setTimestamp(LocalDateTime.now());
+        chatHistory.setServiceType(currentUser.getProfile().getPreferredServiceType());
+
+        chatHistoryRepository.save(chatHistory);
+            return ResponseEntity.ok(new ChatResponse(aiResponse));
+
+        } catch (Exception e) {
+            // Log the error for debugging: e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of("error", "An unexpected error occurred."));
+        }
+    }
+
 }

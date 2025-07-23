@@ -1,5 +1,6 @@
 package com.sheandsoul.v1update.dto;
 
+import com.sheandsoul.v1update.entities.UserServiceType;
 import com.sheandsoul.v1update.entities.Profile.UserType;
 
 import jakarta.validation.constraints.NotBlank;
@@ -16,6 +17,7 @@ public record ProfileRequest(
     Integer age,
     Double weight,
     Double height,
+    @NotNull UserServiceType preferredServiceType,
     // Field for PARTNER_USE
     String referredByCode
 ) {

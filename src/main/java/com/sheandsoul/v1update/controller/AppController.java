@@ -57,7 +57,7 @@ public class AppController {
         }
     }
 
-    @GetMapping("/next-period/me")
+    @GetMapping("/next-period")
     public ResponseEntity<?> getNextPeriod(Authentication authentication) {
         try {
             User currentUser = userDetailsService.findUserByEmail(authentication.getName());
@@ -106,8 +106,6 @@ public class AppController {
     public ResponseEntity<?> setupProfile(@Valid @RequestBody ProfileRequest profileRequest, Authentication authentication) {
         try {
             User currentUser = userDetailsService.findUserByEmail(authentication.getName());
-            // You might need to adjust ProfileRequest to not require a userId, or set it here
-            // For now, let's assume the service can handle it or be adapted.
             ProfileResponse response = appService.createProfile(profileRequest, currentUser); // Modified service method
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
@@ -129,7 +127,7 @@ public class AppController {
     }
 
 
-    @PutMapping("/user/me/menstrual-data")
+    @PutMapping("/menstrual-data")
     public ResponseEntity<?> updateMenstrualEntity(
         @Valid @RequestBody MenstrualTrackingDto menstrualDataDto
         , Authentication authentication) {

@@ -20,10 +20,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Data
 @Table(name = "profiles")
+@Getter
+@Setter
 public class Profile {
 
     @Id
@@ -51,11 +55,9 @@ public class Profile {
     @JsonManagedReference
     private User user;
 
-    @Column(name = "menstrual_service")
-    private boolean enableMenstrualService;
-
-    @Column(name = "breast_cancer_service")
-    private boolean enableBreastCancerService;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_type")
+    private UserServiceType preferredServiceType;
 
     private Integer periodLength;
     private Integer cycleLength;
