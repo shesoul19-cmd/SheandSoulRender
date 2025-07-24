@@ -31,7 +31,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/","/index.html","/api/authenticate", "/api/signup", "/api/verify-email", "/api/resend-otp", "/ws-chat/**").permitAll()
+                .requestMatchers("/","/index.html","/api/authenticate", "/api/signup", "/api/verify-email", "/api/resend-otp", "/ws-chat/**" , "/api/article").permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )

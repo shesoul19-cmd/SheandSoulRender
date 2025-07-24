@@ -185,6 +185,7 @@ public User getUserById(Long userId) {
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
     }
 
+    @Transactional
     public ProfileServiceDto updateUserService(Long userId, ProfileServiceDto profileServiceDto) {
     // 1. Find the profile by user ID or throw an exception if not found
     Profile profile = profileRepository.findByUserId(userId)
