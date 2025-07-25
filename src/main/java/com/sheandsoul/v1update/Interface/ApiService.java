@@ -24,6 +24,6 @@ public interface ApiService {
     Call<Void> resendOtp(@RequestBody ResendOtpRequest request);
 
     @POST("/api/authenticate")
-    Call<AuthDto> authenticate(@RequestBody LoginRequest request)
+    Call<AuthDto> authenticate(@RequestBody LoginRequest request);
 
 }
