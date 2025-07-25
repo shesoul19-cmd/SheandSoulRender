@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -27,20 +28,20 @@ import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
+import com.sheandsoul.v1update.util.JwtUtil;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class AppController {
 
     private final AppService appService;
     private final MyUserDetailService userDetailsService;
+    private final JwtUtil jwtUtil;
 
-    public AppController(AppService appService, MyUserDetailService userDetailsService) {
-        this.appService = appService;
-        this.userDetailsService = userDetailsService;
-    }
     @GetMapping("/partner")
     public ResponseEntity<?> getPartnerData(Authentication authentication) {
        try {
@@ -72,11 +73,15 @@ public class AppController {
     public ResponseEntity<?> signupUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         try {
             User user = appService.registerUser(signUpRequest);
+            final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+
+            final String jwt = jwtUtil.generateToken(userDetails);
             // In a real app, you'd return a JWT here instead of the full user object.
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "message", "User registered successfully!",
-                "userId", user.getId()
-            ));
+                "userId", user.getId(),
+                "jwt" , jwt           
+                 ));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }

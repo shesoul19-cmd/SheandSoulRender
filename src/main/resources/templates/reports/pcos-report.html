@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>PCOS/PCOD Assessment Report</title>
+    <style>
+        body { font-family: 'Helvetica', sans-serif; color: #333; }
+        .container { width: 100%; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .header h1 { margin: 0; color: #5a2d82; }
+        .header p { margin: 5px 0; }
+        .section { margin-top: 25px; }
+        .section-title {
+            background-color: #f2f2f2;
+            padding: 10px;
+            font-size: 1.2em;
+            border-left: 5px solid #5a2d82;
+            margin-bottom: 15px;
+        }
+        .details-grid { display: block; margin-bottom: 20px; }
+        .details-grid p { margin: 5px 0; }
+        .risk-level { text-align: center; padding: 20px; border: 2px dashed #5a2d82; margin-top: 20px; }
+        .risk-level h2 { margin: 0; font-size: 1.5em; }
+        .risk-HIGH { color: #D8000C; }
+        .risk-MODERATE { color: #E99313; }
+        .risk-LOW { color: #239435; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PCOS/PCOD Assessment Report</h1>
+            <p>Generated on: <span th:text="${#temporals.format(assessment.assessmentDate, 'dd-MMM-yyyy')}"></span></p>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">Patient Information</h3>
+            <div class="details-grid">
+                <p><strong>Name:</strong> <span th:text="${profile.name}"></span></p>
+                <p><strong>Age:</strong> <span th:text="${profile.age}"></span></p>
+                <p><strong>User ID:</strong> <span th:text="${profile.user.id}"></span></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">Assessment Summary</h3>
+            <div class="risk-level">
+                <p>Overall Risk Level</p>
+                <h2 th:classappend="'risk-' + ${assessment.riskLevel}" th:text="${assessment.riskLevel}">MODERATE</h2>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">Reported Symptoms</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symptom</th>
+                        <th>Severity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="symptomEntry : ${assessment.symptoms}">
+                        <td th:text="${symptomEntry.key}">IRREGULAR_PERIODS</td>
+                        <td th:text="${symptomEntry.value}">MODERATE</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer" style="margin-top: 40px; text-align: center; font-size: 0.8em; color: #777;">
+            <p>This report is based on a self-assessment and is not a substitute for a professional medical diagnosis. Please consult a healthcare provider for any health concerns.</p>
+            <p>&copy; 2025 SheAndSoul. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

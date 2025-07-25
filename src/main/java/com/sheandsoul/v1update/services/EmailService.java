@@ -15,11 +15,15 @@ public class EmailService {
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
+
     public void sendOtpEmail(String to, String otp) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
-            
+
+            // Set the "From" address to match your Zoho username
+            helper.setFrom("support@sheandsoul.co.in");
+
             String emailContent = "<h3>Hello,</h3>"
                                 + "<p>Thank you for signing up. Please use the following One-Time Password (OTP) to verify your email address:</p>"
                                 + "<h2>" + otp + "</h2>"
@@ -30,11 +34,11 @@ public class EmailService {
             helper.setText(emailContent, true); // true indicates HTML content
             helper.setTo(to);
             helper.setSubject("Your Email Verification Code");
+
             mailSender.send(mimeMessage);
         } catch (MessagingException e) {
             System.err.println("Failed to send OTP email: " + e.getMessage());
             throw new IllegalStateException("Failed to send OTP email.");
         }
     }
-
 }
