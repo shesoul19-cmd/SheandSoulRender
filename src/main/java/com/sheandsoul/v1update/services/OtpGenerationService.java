@@ -2,19 +2,23 @@ package com.sheandsoul.v1update.services;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sheandsoul.v1update.entities.Otp;
+import com.sheandsoul.v1update.repository.OtpRepository;
 
 @Service
 public class OtpGenerationService {
 
     private static final int OTP_LENGTH = 6;
-    private static final int OTP_VALID_DURATION_MINUTES = 10;
 
-    // In-memory cache for OTPs. For production, use a distributed cache like Redis.
-    private final ConcurrentHashMap<String, String> otpCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, LocalDateTime> otpExpiryCache = new ConcurrentHashMap<>();
+    private final OtpRepository otpRepository;
+
+    public OtpGenerationService(OtpRepository otpRepository) {
+        this.otpRepository = otpRepository;
+    }
 
     public String generateOtp() {
         SecureRandom random = new SecureRandom();
@@ -22,23 +26,46 @@ public class OtpGenerationService {
         return String.valueOf(otp);
     }
 
+    @Transactional
     public void storeOtp(String email, String otp) {
-        otpCache.put(email, otp);
-        otpExpiryCache.put(email, LocalDateTime.now().plusMinutes(OTP_VALID_DURATION_MINUTES));
+        Otp otpEntity = new Otp();
+        otpEntity.setEmail(email);
+        otpEntity.setOtpCode(otp);
+        otpEntity.setCreatedAt(LocalDateTime.now());
+        otpEntity.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        otpEntity.setUsed(false);
+        
+        otpRepository.save(otpEntity);
     }
 
-    public String getOtp(String email) {
-        return otpCache.get(email);
+    public String getLatestOtp(String email) {
+        LocalDateTime now = LocalDateTime.now();
+        var validOtps = otpRepository.findValidOtpsByEmail(email, now);
+        
+        if (validOtps.isEmpty()) {
+            return null;
+        }
+        
+        return validOtps.get(0).getOtpCode();
     }
 
-    public boolean isOtpExpired(String email) {
-        LocalDateTime expiryTime = otpExpiryCache.get(email);
-        return expiryTime == null || expiryTime.isBefore(LocalDateTime.now());
+    public boolean isOtpValid(String email, String otpCode) {
+        LocalDateTime now = LocalDateTime.now();
+        return otpRepository.findValidOtpByEmailAndCode(email, otpCode, now).isPresent();
     }
 
-    public void clearOtp(String email) {
-        otpCache.remove(email);
-        otpExpiryCache.remove(email);
+    @Transactional
+    public void markOtpAsUsed(String email) {
+        otpRepository.markAllOtpsAsUsed(email);
     }
 
+    @Transactional
+    public void clearOtps(String email) {
+        otpRepository.deleteAllOtpsByEmail(email);
+    }
+
+    @Transactional
+    public void cleanupExpiredOtps() {
+        otpRepository.deleteExpiredOtps(LocalDateTime.now());
+    }
 }

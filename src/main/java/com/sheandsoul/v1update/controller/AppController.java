@@ -21,6 +21,7 @@ import com.sheandsoul.v1update.dto.PartnerDataDto;
 import com.sheandsoul.v1update.dto.ProfileRequest;
 import com.sheandsoul.v1update.dto.ProfileResponse;
 import com.sheandsoul.v1update.dto.ProfileServiceDto;
+import com.sheandsoul.v1update.dto.ResendOtpRequest;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
 import com.sheandsoul.v1update.entities.SymptomLocation;
@@ -31,17 +32,20 @@ import com.sheandsoul.v1update.services.MyUserDetailService;
 import com.sheandsoul.v1update.util.JwtUtil;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
 public class AppController {
 
     private final AppService appService;
     private final MyUserDetailService userDetailsService;
     private final JwtUtil jwtUtil;
 
+    public AppController(AppService appService, MyUserDetailService userDetailsService, JwtUtil jwtUtil) {
+        this.appService = appService;
+        this.userDetailsService = userDetailsService;
+        this.jwtUtil = jwtUtil;
+    }
     @GetMapping("/partner")
     public ResponseEntity<?> getPartnerData(Authentication authentication) {
        try {
@@ -98,7 +102,7 @@ public class AppController {
     }
 
     @PostMapping("/resend-otp")
-    public ResponseEntity<?> resendOtp(@Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<?> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
         try{
             appService.resendOtp(request.email());
             return ResponseEntity.ok(Map.of("message", "OTP resent successfully!"));

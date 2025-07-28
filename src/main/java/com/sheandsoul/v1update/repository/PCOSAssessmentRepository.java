@@ -8,6 +8,5 @@ import com.sheandsoul.v1update.entities.PCOSAssesment;
 
 public interface PCOSAssessmentRepository extends JpaRepository<PCOSAssesment, Long> {
 
-     Optional<PCOSAssesment> findTopByProfileIdOrderByAssessmentDateDesc(Long profileId);
-
+    Optional<PCOSAssesment>findTopByProfileIdOrderByAssessmentDateDesc(Long profileId);
 }

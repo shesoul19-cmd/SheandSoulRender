@@ -76,19 +76,14 @@ public class AppService {
             throw new IllegalStateException("Email is already verified.");
         }
 
-        String cachedOtp = otpGenerationService.getOtp(email);
-        if (cachedOtp == null || !cachedOtp.equals(submittedOtp)) {
+        if (!otpGenerationService.isOtpValid(email, submittedOtp)) {
             throw new IllegalArgumentException("Invalid or expired OTP.");
-        }
-
-        if(otpGenerationService.isOtpExpired(email)) {
-            throw new IllegalArgumentException("OTP has expired. Please request a new one.");
         }
 
         user.setEmailVerified(true);
         userRepository.save(user);
 
-        otpGenerationService.clearOtp(email);
+        otpGenerationService.markOtpAsUsed(email);
     }
 
     @Transactional
