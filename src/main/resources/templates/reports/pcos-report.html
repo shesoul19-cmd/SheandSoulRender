@@ -4,76 +4,182 @@
     <meta charset="UTF-8"/>
     <title>PCOS/PCOD Assessment Report</title>
     <style>
-        body { font-family: 'Helvetica', sans-serif; color: #333; }
-        .container { width: 100%; margin: 0 auto; padding: 20px; }
-        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .header h1 { margin: 0; color: #5a2d82; }
-        .header p { margin: 5px 0; }
-        .section { margin-top: 25px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #8E44AD;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #8E44AD;
+            font-size: 2em;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #777;
+        }
+        .section {
+            margin-top: 30px;
+        }
         .section-title {
-            background-color: #f2f2f2;
-            padding: 10px;
-            font-size: 1.2em;
-            border-left: 5px solid #5a2d82;
+            font-size: 1.4em;
+            color: #8E44AD;
+            border-bottom: 2px solid #f2f2f2;
+            padding-bottom: 5px;
             margin-bottom: 15px;
         }
-        .details-grid { display: block; margin-bottom: 20px; }
-        .details-grid p { margin: 5px 0; }
-        .risk-level { text-align: center; padding: 20px; border: 2px dashed #5a2d82; margin-top: 20px; }
-        .risk-level h2 { margin: 0; font-size: 1.5em; }
-        .risk-HIGH { color: #D8000C; }
-        .risk-MODERATE { color: #E99313; }
-        .risk-LOW { color: #239435; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f9f9f9; }
+        .details-grid {
+            display: block;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .details-grid p {
+            margin: 8px 0;
+        }
+        .risk-level {
+            text-align: center;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .risk-level p {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .risk-level h2 {
+            margin: 5px 0 0;
+            font-size: 2.2em;
+        }
+        .risk-HIGH { background-color: #fbe9e7; border: 1px solid #ffab91; color: #d84315; }
+        .risk-MODERATE { background-color: #fff3e0; border: 1px solid #ffe082; color: #f57c00; }
+        .risk-LOW { background-color: #e8f5e9; border: 1px solid #a5d6a7; color: #388e3c; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .symptom-severity-SEVERE { background-color: #ffcdd2; }
+        .symptom-severity-MODERATE { background-color: #ffe0b2; }
+        .symptom-severity-MILD { background-color: #c8e6c9; }
+        .ai-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fdfdff;
+            border: 1px solid #e0e0ff;
+            border-radius: 5px;
+        }
+        .ai-section h2 {
+            font-size: 1.5em;
+            color: #8E44AD;
+        }
+        .ai-section p {
+            margin-bottom: 10px;
+        }
+        .highlight-1 {
+            background-color: #ffcdd2; /* Light Red */
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .highlight-2 {
+            background-color: #ffe0b2; /* Light Orange */
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .highlight-3 {
+            background-color: #c8e6c9; /* Light Green */
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #888;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>PCOS/PCOD Assessment Report</h1>
-            <p>Generated on: <span th:text="${#temporals.format(assessment.assessmentDate, 'dd-MMM-yyyy')}"></span></p>
+            <p>Generated on: <span th:text="${assessment != null and assessment.assessmentDate != null} ? ${#temporals.format(assessment.assessmentDate, 'dd-MMM-yyyy')} : 'N/A'"></span></p>
         </div>
-
         <div class="section">
             <h3 class="section-title">Patient Information</h3>
             <div class="details-grid">
-                <p><strong>Name:</strong> <span th:text="${profile.name}"></span></p>
-                <p><strong>Age:</strong> <span th:text="${profile.age}"></span></p>
-                <p><strong>User ID:</strong> <span th:text="${profile.user.id}"></span></p>
+                <p><strong>Name:</strong> <span th:text="${profile?.name}"></span></p>
+                <p><strong>Age:</strong> <span th:text="${profile?.age}"></span></p>
+                <p><strong>User ID:</strong> <span th:text="${profile?.user?.id}"></span></p>
             </div>
         </div>
-
         <div class="section">
             <h3 class="section-title">Assessment Summary</h3>
-            <div class="risk-level">
+            <div th:if="${assessment != null}" class="risk-level" th:classappend="'risk-' + ${assessment.riskLevel}">
                 <p>Overall Risk Level</p>
-                <h2 th:classappend="'risk-' + ${assessment.riskLevel}" th:text="${assessment.riskLevel}">MODERATE</h2>
+                <h2 th:text="${assessment.riskLevel}">MODERATE</h2>
+            </div>
+             <div th:if="${assessment == null}" class="risk-level">
+                <p>No assessment data available.</p>
             </div>
         </div>
-
         <div class="section">
             <h3 class="section-title">Reported Symptoms</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symptom</th>
-                        <th>Severity</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="symptomEntry : ${assessment.symptoms}">
-                        <td th:text="${symptomEntry.key}">IRREGULAR_PERIODS</td>
-                        <td th:text="${symptomEntry.value}">MODERATE</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div th:if="${assessment != null and assessment.symptoms != null and not #maps.isEmpty(assessment.symptoms)}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symptom</th>
+                            <th>Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="symptomEntry : ${assessment.symptoms}" th:classappend="'symptom-severity-' + ${symptomEntry.value}">
+                            <td th:text="${symptomEntry.key}">IRREGULAR_PERIODS</td>
+                            <td th:text="${symptomEntry.value}">MODERATE</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+             <div th:if="${assessment == null or assessment.symptoms == null or #maps.isEmpty(assessment.symptoms)}">
+                <p>No symptoms were reported in this assessment.</p>
+            </div>
         </div>
-
-        <div class="footer" style="margin-top: 40px; text-align: center; font-size: 0.8em; color: #777;">
+        <div class="ai-section">
+            <h3 class="section-title">AI Powered Insights</h3>
+            <!-- This div will now be populated with well-formed HTML -->
+            <div th:utext="${formattedAiResponse}"></div>
+        </div>
+        <!-- THE EXTRA, INCORRECT </div> TAG WAS REMOVED FROM HERE -->
+        <div class="footer">
             <p>This report is based on a self-assessment and is not a substitute for a professional medical diagnosis. Please consult a healthcare provider for any health concerns.</p>
-            <p>&copy; 2025 SheAndSoul. All rights reserved.</p>
+            <p>© 2025 SheAndSoul. All rights reserved.</p>
         </div>
     </div>
 </body>

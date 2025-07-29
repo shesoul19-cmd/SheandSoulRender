@@ -1,5 +1,6 @@
 package com.sheandsoul.v1update.controller;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,9 @@ import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
+import com.sheandsoul.v1update.services.MenstruationAssistantService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
+import com.sheandsoul.v1update.services.NotificationService;
 import com.sheandsoul.v1update.util.JwtUtil;
 
 import jakarta.validation.Valid;
@@ -38,11 +41,15 @@ import jakarta.validation.Valid;
 public class AppController {
 
     private final AppService appService;
+    private final MenstruationAssistantService menstruationAssistantService;
+    private final NotificationService notificationService;
     private final MyUserDetailService userDetailsService;
     private final JwtUtil jwtUtil;
 
-    public AppController(AppService appService, MyUserDetailService userDetailsService, JwtUtil jwtUtil) {
+    public AppController(AppService appService, MenstruationAssistantService menstruationAssistantService, NotificationService notificationService, MyUserDetailService userDetailsService, JwtUtil jwtUtil) {
         this.appService = appService;
+        this.menstruationAssistantService = menstruationAssistantService;
+        this.notificationService = notificationService;
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
     }
@@ -199,6 +206,53 @@ public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest
                 "message", "Assessment completed successfully.",
                 "riskLevel", riskLevel
             ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/menstrual-assistant")
+    public ResponseEntity<?> menstrualAssistantRequest(@RequestBody Map<String, String> request, Authentication authentication) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            com.sheandsoul.v1update.entities.Profile userProfile = appService.findProfileByUserId(currentUser.getId());
+            
+            String userMessage = request.get("message");
+            String language = userProfile.getLanguageCode() != null ? userProfile.getLanguageCode() : "English";
+            
+            String response = menstruationAssistantService.handleRequest(userMessage, userProfile, language);
+            
+            return ResponseEntity.ok(Map.of("response", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/update-cycle")
+    public ResponseEntity<?> updateCycleManually(Authentication authentication) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            com.sheandsoul.v1update.entities.Profile userProfile = appService.findProfileByUserId(currentUser.getId());
+            
+            // Check if user has the required data
+            if (userProfile.getLastPeriodStartDate() == null || userProfile.getCycleLength() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Insufficient data to update cycle."));
+            }
+            
+            // Calculate next period date
+            LocalDate nextPeriodStartDate = userProfile.getLastPeriodStartDate().plusDays(userProfile.getCycleLength());
+            
+            // If the predicted next period date has passed, update the cycle data
+            if (nextPeriodStartDate.isBefore(LocalDate.now()) || nextPeriodStartDate.isEqual(LocalDate.now())) {
+                // Shift the next predicted cycle to be the new last cycle
+                userProfile.setLastPeriodStartDate(nextPeriodStartDate);
+                // Save the updated profile
+                notificationService.updateCycleDataForUser(userProfile);
+                
+                return ResponseEntity.ok(Map.of("message", "Cycle updated successfully."));
+            }
+            
+            return ResponseEntity.ok(Map.of("message", "No update needed. Next period date is in the future."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

@@ -65,6 +65,8 @@ public class Profile {
     private LocalDate lastPeriodStartDate;
     private LocalDate lastPeriodEndDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String deviceToken;
     private String languageCode;
     public enum UserType {
         USER, PARTNER
