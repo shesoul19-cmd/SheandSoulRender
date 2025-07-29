@@ -15,9 +15,8 @@ public class FirebaseConfig {
     @PostConstruct
     public void initialize() throws IOException {
         Dotenv dotenv = Dotenv.load();
-        String firebaseConfigPath = dotenv.get("FIREBASE_CONFIG");
 
-        FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath);  // Path to your JSON file
+        FileInputStream serviceAccount = new FileInputStream("/src/main/resources/sheandsoul.json");  // Path to your JSON file
 
         FirebaseOptions options = FirebaseOptions.builder()
             .setCredentials(GoogleCredentials.fromStream(serviceAccount))
