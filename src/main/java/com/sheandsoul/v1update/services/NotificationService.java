@@ -27,8 +27,7 @@ public class NotificationService {
     private final AppService appService;
     private final NotificationRepository notificationRepository;
     private final BreastCancerSelfExamLogRepository breastCancerSelfExamLogRepository;
-    private final PushNotificationService pushNotificationService;
-
+    
     @Scheduled(cron = "0 0 9 * * ?") 
     @Transactional
     public void checkAndSendPeriodAlerts() {
@@ -132,9 +131,6 @@ public class NotificationService {
         notification.setCreatedAt(OffsetDateTime.now());
         notification.setRead(false);
         notificationRepository.save(notification);
-
-        String title = "She&Soul Reminder";
-        pushNotificationService.sendPush(profile.getDeviceToken(), title, message);
         
     }
 
