@@ -50,7 +50,7 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/","/index.html","/api/authenticate", "/api/signup", "/api/verify-email", "/api/resend-otp", "/ws-chat/**" , "/api/article", "/api/subscription/**").permitAll()
+                .requestMatchers("/","/index.html","/api/authenticate", "/api/signup", "/api/verify-email", "/api/resend-otp", "/ws-chat/**", "/api/subscription/**").permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
