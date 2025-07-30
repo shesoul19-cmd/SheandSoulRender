@@ -64,5 +64,34 @@ public class ReportController {
         }
     }
 
+    @GetMapping("/breast-cancer/my-report")
+    public ResponseEntity<byte[]> downloadMyBreastCancerReport(Authentication authentication) throws Exception {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
 
+        try {
+            String email = authentication.getName();
+            byte[] pdfBytes = pcosReportService.generateBreastCancerReportForUser(email);
+
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String filename = "Breast_Cancer_Report_" + email.replaceAll("[^a-zA-Z0-9]", "_") + "_" + timestamp + ".pdf";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(pdfBytes.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+
+        } catch (EntityNotFoundException e) {
+            e.printStackTrace();
+            return ResponseEntity.notFound().build();
+        } catch (DocumentException | IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

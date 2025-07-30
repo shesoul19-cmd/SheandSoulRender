@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>PCOS/PCOD Assessment Report</title>
+    <title>Breast Cancer Self-Exam Report</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -19,13 +19,13 @@
         }
         .header {
             text-align: center;
-            border-bottom: 2px solid #8E44AD;
+            border-bottom: 2px solid #f06292; /* Pink color for breast cancer awareness */
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
         .header h1 {
             margin: 0;
-            color: #8E44AD;
+            color: #f06292;
             font-size: 2em;
         }
         .header p {
@@ -37,7 +37,7 @@
         }
         .section-title {
             font-size: 1.4em;
-            color: #8E44AD;
+            color: #f06292;
             border-bottom: 2px solid #f2f2f2;
             padding-bottom: 5px;
             margin-bottom: 15px;
@@ -51,24 +51,6 @@
         .details-grid p {
             margin: 8px 0;
         }
-        .risk-level {
-            text-align: center;
-            padding: 25px;
-            margin-top: 20px;
-            border-radius: 5px;
-        }
-        .risk-level p {
-            margin: 0;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        .risk-level h2 {
-            margin: 5px 0 0;
-            font-size: 2.2em;
-        }
-        .risk-HIGH { background-color: #fbe9e7; border: 1px solid #ffab91; color: #d84315; }
-        .risk-MODERATE { background-color: #fff3e0; border: 1px solid #ffe082; color: #f57c00; }
-        .risk-LOW { background-color: #e8f5e9; border: 1px solid #a5d6a7; color: #388e3c; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -83,19 +65,16 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .symptom-severity-SEVERE { background-color: #ffcdd2; }
-        .symptom-severity-MODERATE { background-color: #ffe0b2; }
-        .symptom-severity-MILD { background-color: #c8e6c9; }
         .ai-section {
             margin-top: 30px;
             padding: 20px;
-            background-color: #fdfdff;
-            border: 1px solid #e0e0ff;
+            background-color: #fff0f5; /* Lighter pink */
+            border: 1px solid #f8bbd0;
             border-radius: 5px;
         }
         .ai-section h2 {
             font-size: 1.5em;
-            color: #8E44AD;
+            color: #f06292;
         }
         .ai-section p {
             margin-bottom: 10px;
@@ -128,8 +107,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>PCOS/PCOD Assessment Report</h1>
-            <p>Generated on: <span th:text="${assessment != null and assessment.assessmentDate != null} ? ${#temporals.format(assessment.assessmentDate, 'dd-MMM-yyyy')} : 'N/A'"></span></p>
+            <h1>Breast Health Self-Exam Report</h1>
+            <p>Generated on: <span th:text="${examLog != null and examLog.examDate != null} ? ${#temporals.format(examLog.examDate, 'dd-MMM-yyyy')} : 'N/A'"></span></p>
         </div>
         <div class="section">
             <h3 class="section-title">Patient Information</h3>
@@ -140,45 +119,37 @@
             </div>
         </div>
         <div class="section">
-            <h3 class="section-title">Assessment Summary</h3>
-            <div th:if="${assessment != null}" class="risk-level" th:classappend="'risk-' + ${assessment.riskLevel}">
-                <p>Overall Risk Level</p>
-                <h2 th:text="${assessment.riskLevel}">MODERATE</h2>
-            </div>
-             <div th:if="${assessment == null}" class="risk-level">
-                <p>No assessment data available.</p>
-            </div>
-        </div>
-        <div class="section">
             <h3 class="section-title">Reported Symptoms</h3>
-            <div th:if="${assessment != null and assessment.symptoms != null and not #maps.isEmpty(assessment.symptoms)}">
+            <div th:if="${examLog != null and examLog.symptoms != null and not #lists.isEmpty(examLog.symptoms)}">
                 <table>
                     <thead>
                         <tr>
                             <th>Symptom</th>
+                            <th>Location</th>
+                            <th>Side</th>
                             <th>Severity</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="symptomEntry : ${assessment.symptoms}" th:classappend="'symptom-severity-' + ${symptomEntry.value}">
-                            <td th:text="${symptomEntry.key}">IRREGULAR_PERIODS</td>
-                            <td th:text="${symptomEntry.value}">MODERATE</td>
+                        <tr th:each="symptom : ${examLog.symptoms}">
+                            <td th:text="${symptom.symptom}"></td>
+                            <td th:text="${symptom.location}"></td>
+                            <td th:text="${symptom.side}"></td>
+                            <td th:text="${symptom.severity}"></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-             <div th:if="${assessment == null or assessment.symptoms == null or #maps.isEmpty(assessment.symptoms)}">
-                <p>No symptoms were reported in this assessment.</p>
+            <div th:if="${examLog == null or examLog.symptoms == null or #lists.isEmpty(examLog.symptoms)}">
+                <p>No symptoms were reported in this self-exam.</p>
             </div>
         </div>
         <div class="ai-section">
             <h3 class="section-title">AI Powered Insights</h3>
-            <!-- This div will now be populated with well-formed HTML -->
             <div th:utext="${formattedAiResponse}"></div>
         </div>
-        <!-- THE EXTRA, INCORRECT </div> TAG WAS REMOVED FROM HERE -->
         <div class="footer">
-            <p>This report is based on a self-assessment and is not a substitute for a professional medical diagnosis. Please consult a healthcare provider for any health concerns.</p>
+            <p>This report is based on a self-examination and is not a substitute for a professional medical diagnosis. Please consult a healthcare provider for any health concerns.</p>
             <p>© 2025 SheAndSoul. All rights reserved.</p>
         </div>
     </div>

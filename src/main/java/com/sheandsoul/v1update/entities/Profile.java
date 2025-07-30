@@ -75,4 +75,8 @@ public class Profile {
 
     @Column(name = "breast_cancer_risk_level")
     private String breastCancerRiskLevel;
+
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> medicalSummary;
 }
