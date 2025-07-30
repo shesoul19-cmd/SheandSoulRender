@@ -1,5 +1,6 @@
 package com.sheandsoul.v1update.controller;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
@@ -28,6 +31,7 @@ import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
+import com.sheandsoul.v1update.services.MenstruationAssistantService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
 import com.sheandsoul.v1update.util.JwtUtil;
 
@@ -35,14 +39,17 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
 public class AppController {
 
     private final AppService appService;
+    private final MenstruationAssistantService menstruationAssistantService;
     private final MyUserDetailService userDetailsService;
     private final JwtUtil jwtUtil;
 
-    public AppController(AppService appService, MyUserDetailService userDetailsService, JwtUtil jwtUtil) {
+    public AppController(AppService appService, MenstruationAssistantService menstruationAssistantService, MyUserDetailService userDetailsService, JwtUtil jwtUtil) {
         this.appService = appService;
+        this.menstruationAssistantService = menstruationAssistantService;
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
     }
@@ -204,4 +211,20 @@ public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest
         }
     }
 
+    @PostMapping("/menstrual-assistant")
+    public ResponseEntity<?> menstrualAssistantRequest(@RequestBody Map<String, String> request, Authentication authentication) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            String userMessage = request.get("message");
+            
+            // The service method only needs the user and the message.
+            String response = menstruationAssistantService.getAssistantResponse(currentUser, userMessage);
+            
+            return ResponseEntity.ok(Map.of("response", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    
 }

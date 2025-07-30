@@ -117,7 +117,7 @@ public class PCOSReportService {
         context.setVariable("examLog", examLog);
         context.setVariable("formattedAiResponse", formattedAiResponse);
 
-        String htmlContent = templateEngine.process("reports/breast-cancer-report", context);
+        String htmlContent = templateEngine.process("reports/breast-cancer-repoert", context);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ITextRenderer renderer = new ITextRenderer();
@@ -159,7 +159,7 @@ public class PCOSReportService {
         if (examLog.getSymptoms() != null) {
             prompt.append("Symptoms: ").append(examLog.getSymptoms().toString()).append(". ");
         }
-        prompt.append("Based on this data, provide a summary of the findings, information about breast health, and when to consult a doctor. Use markdown for formatting. The tone should be supportive and informative.");
+        prompt.append("Based on this data, provide a summary of the aifindings, information about breast health, and when to consult a doctor. Use markdown for formatting. The tone should be supportive and informative.");
         return prompt.toString();
     }
 }

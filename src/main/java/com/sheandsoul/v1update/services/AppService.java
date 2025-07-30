@@ -162,16 +162,11 @@ public class AppService {
     }
 
     public User loginUser(LoginRequest loginRequest) {
-    // Step 1: Find user by email
     User user = userRepository.findByEmail(loginRequest.email())
         .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-
-    // Step 2: Check password (assuming you stored it using BCrypt)
     if (!passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
         throw new IllegalArgumentException("Invalid email or password");
     }
-
-    // Step 3: Return user if valid
     return user;
 }
 
@@ -198,10 +193,16 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
     Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
+    // Store the previous values for comparison
+    LocalDate previousLastPeriodStartDate = profile.getLastPeriodStartDate();
+    Integer previousCycleLength = profile.getCycleLength();
+    
+    // Update the profile with new data
     profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
     profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
     profile.setPeriodLength(updateDto.getPeriodLength());
     profile.setCycleLength(updateDto.getCycleLength());
+    
     profileRepository.save(profile);
     return updateDto;
     
@@ -271,6 +272,10 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
             .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
         profile.setLanguageCode(languageCode);
+        return profileRepository.save(profile);
+    }
+
+    public Profile saveProfile(Profile profile) {
         return profileRepository.save(profile);
     }
 

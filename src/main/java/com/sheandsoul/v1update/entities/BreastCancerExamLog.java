@@ -35,6 +35,8 @@ public class BreastCancerExamLog {
     private Profile profile;
     
     private LocalDate examDate;
+
+    private int reAccessDate;
     
     private LocalDate createdAt;
     @Type(JsonType.class)

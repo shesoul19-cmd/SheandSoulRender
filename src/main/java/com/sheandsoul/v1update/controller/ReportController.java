@@ -19,7 +19,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/report")
+@RequestMapping("/api/report")
 @RequiredArgsConstructor
 public class ReportController {
 

@@ -20,7 +20,24 @@ public class BreastHealthAssistantService implements AssistantService {
     public String getAssistantResponse(User user, String message) {
         String unifiedPrompt = buildUnifiedPrompt(message, user.getProfile(), "en");
         String rawResponse = geminiService.getGeminiResponse(user, unifiedPrompt);
-        return naturalLanguageService.formatResponse(rawResponse);
+        // Sanitize the response before formatting it
+        String sanitizedResponse = sanitizeAiResponse(rawResponse);
+        return naturalLanguageService.formatResponse(sanitizedResponse);
+    }
+
+    /**
+     * Cleans the raw string from an AI model to remove common wrapping
+     * like Markdown code blocks.
+     *
+     * @param rawResponse The raw string response from the AI.
+     * @return A clean string.
+     */
+    private String sanitizeAiResponse(String rawResponse) {
+        if (rawResponse == null || rawResponse.trim().isEmpty()) {
+            return "";
+        }
+        // Trim whitespace and remove markdown code block fences (e.g., ```json ... ``` or ``` ... ```)
+        return rawResponse.trim().replaceFirst("^```(json)?\\s*", "").replaceFirst("```$", "").trim();
     }
 
     private String buildUnifiedPrompt(String userMessage, Profile userProfile, String language) {

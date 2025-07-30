@@ -2,6 +2,7 @@ package com.sheandsoul.v1update.entities;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,8 +28,10 @@ public class ChatHistory {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(columnDefinition = "TEXT")
     private String userMessage;
 
+    @Column(columnDefinition = "TEXT")
     private String botResponse;
 
     private LocalDateTime timestamp;

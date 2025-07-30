@@ -24,13 +24,31 @@ public class MenstruationAssistantService implements AssistantService {
         String rawResponse;
 
         if ("GET_CYCLE_PREDICTION".equals(intent)) {
+            // This response is generated locally, not by the AI, so no sanitization needed.
             rawResponse = appService.getCyclePredictionAsText(user.getId());
         } else {
             String prompt = buildUnifiedPrompt(message, user.getProfile(), "en");
-            rawResponse = geminiService.getGeminiResponse(user, prompt);
+            String geminiResponse = geminiService.getGeminiResponse(user, prompt);
+            // Sanitize the response from the AI before further processing.
+            rawResponse = sanitizeAiResponse(geminiResponse);
         }
         
         return naturalLanguageService.formatResponse(rawResponse);
+    }
+    
+    /**
+     * Cleans the raw string from an AI model to remove common wrapping
+     * like Markdown code blocks.
+     *
+     * @param rawResponse The raw string response from the AI.
+     * @return A clean string.
+     */
+    private String sanitizeAiResponse(String rawResponse) {
+        if (rawResponse == null || rawResponse.trim().isEmpty()) {
+            return "";
+        }
+        // Trim whitespace and remove markdown code block fences (e.g., ```json ... ``` or ``` ... ```)
+        return rawResponse.trim().replaceFirst("^```(json)?\\s*", "").replaceFirst("```$", "").trim();
     }
 
     private String classifyIntentLocally(String userMessage) {

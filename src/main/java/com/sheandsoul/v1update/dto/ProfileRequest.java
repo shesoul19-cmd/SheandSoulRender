@@ -7,12 +7,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ProfileRequest(
-    @NotNull Long userId,
     @NotBlank String name,
     String nickname,
     @NotNull UserType userType,
 
-    @NotNull String preferredLanguage, // New field for preferred language
+    String preferredLanguage, // New field for preferred language
     // Fields for SELF_USE
     Integer age,
     Double weight,
