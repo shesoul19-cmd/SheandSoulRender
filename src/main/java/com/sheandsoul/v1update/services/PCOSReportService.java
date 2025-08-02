@@ -117,7 +117,7 @@ public class PCOSReportService {
         context.setVariable("examLog", examLog);
         context.setVariable("formattedAiResponse", formattedAiResponse);
 
-        String htmlContent = templateEngine.process("reports/breast-cancer-repoert", context);
+        String htmlContent = templateEngine.process("reports/breast-cancer-report", context);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ITextRenderer renderer = new ITextRenderer();

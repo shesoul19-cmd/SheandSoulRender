@@ -124,18 +124,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Symptom</th>
-                            <th>Location</th>
+                            <th>Symptom/Location</th>
                             <th>Side</th>
-                            <th>Severity</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="symptom : ${examLog.symptoms}">
-                            <td th:text="${symptom.symptom}"></td>
-                            <td th:text="${symptom.location}"></td>
-                            <td th:text="${symptom.side}"></td>
-                            <td th:text="${symptom.severity}"></td>
+                            <td th:text="${symptom.key}"></td>
+                            <td th:text="${symptom.value}"></td>
                         </tr>
                     </tbody>
                 </table>

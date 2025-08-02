@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sheandsoul.v1update.dto.TranslationWrapper;
 import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.User;
+import com.sheandsoul.v1update.services.MusicService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
 import com.sheandsoul.v1update.services.TranslationService;
 
@@ -23,6 +24,9 @@ public class DashboardController {
 
     @Autowired
     private TranslationService translationService;
+
+    @Autowired
+    private MusicService musicService;
 
     @GetMapping("/api/dashboard/me") // Changed URL to a secure, standard convention
     public ResponseEntity<?> getMyDashboard(Authentication authentication) { // Changed method signature
@@ -51,6 +55,7 @@ public class DashboardController {
         dashboardData.addUiText("welcomeMessage", "Hello, " + userProfile.getName());
         dashboardData.addUiText("cyclePredictionButton", "View Cycle Prediction");
         dashboardData.addUiText("chatButton", "Open AI Assistant");
+        dashboardData.addData("music", musicService.getAllMusic());
 
         // 3. Translate all UI text fields in one go
         Map<String, String> translatedUiText = new HashMap<>();

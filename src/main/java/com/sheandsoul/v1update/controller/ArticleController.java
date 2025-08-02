@@ -32,12 +32,12 @@ public class ArticleController {
         this.profileRepository = profileRepository;
     }
 
-    @PostMapping
+    @PostMapping("/post")
     public Article createArticle(@RequestBody Article article){
         return articleRepository.save(article);
     }
 
-    @GetMapping
+    @GetMapping("/get")
     public List<Article> getArticles(Authentication authentication){
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
         return profileRepository.findByUserId(currentUser.getId())
