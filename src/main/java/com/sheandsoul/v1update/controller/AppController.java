@@ -122,10 +122,16 @@ public class AppController {
     public ResponseEntity<?> setupProfile(@Valid @RequestBody ProfileRequest profileRequest, Authentication authentication) {
         try {
             User currentUser = userDetailsService.findUserByEmail(authentication.getName());
-            ProfileResponse response = appService.createProfile(profileRequest, currentUser); // Modified service method
+            ProfileResponse response = appService.createProfile(profileRequest, currentUser);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            // Log the full stack trace for debugging
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Profile creation failed: " + e.getMessage()));
         }
     }
 
@@ -161,6 +167,17 @@ public class AppController {
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
         appService.updateUserLanguage(currentUser.getId(), languageCode);
         return ResponseEntity.ok(Map.of("message", "User language updated successfully to " + languageCode));
+    }
+
+    @PutMapping("/profile/basic")
+    public ResponseEntity<?> updateBasicProfile(@RequestBody Map<String, Object> payload, Authentication authentication) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            appService.updateBasicProfile(currentUser.getId(), payload);
+            return ResponseEntity.ok(Map.of("message", "Profile updated successfully!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
     }
 
 
