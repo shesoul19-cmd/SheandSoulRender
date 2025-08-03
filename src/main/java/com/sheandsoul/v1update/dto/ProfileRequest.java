@@ -16,7 +16,7 @@ public record ProfileRequest(
     Integer age,
     Double weight,
     Double height,
-    @NotNull UserServiceType preferredServiceType,
+    UserServiceType preferredServiceType, // Made nullable to match Android app
     // Field for PARTNER_USE
     String referredByCode
 ) {
