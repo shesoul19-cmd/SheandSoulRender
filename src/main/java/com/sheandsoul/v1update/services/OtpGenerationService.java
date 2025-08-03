@@ -23,11 +23,14 @@ public class OtpGenerationService {
     public String generateOtp() {
         SecureRandom random = new SecureRandom();
         int otp = 100000 + random.nextInt(900000);
-        return String.valueOf(otp);
+        String otpStr = String.valueOf(otp);
+        System.out.println("[DEBUG] Generated OTP: " + otpStr);
+        return otpStr;
     }
 
     @Transactional
     public void storeOtp(String email, String otp) {
+        System.out.println("[DEBUG] Storing OTP: " + otp + " for email: " + email);
         Otp otpEntity = new Otp();
         otpEntity.setEmail(email);
         otpEntity.setOtpCode(otp);

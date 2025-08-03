@@ -60,11 +60,13 @@ public class AppService {
         User savedUser = userRepository.save(newUser);
 
         try {
+            System.out.println("[DEBUG] Calling OTP generation and email service for user: " + savedUser.getEmail());
             String otp = otpGenerationService.generateOtp();
             otpGenerationService.storeOtp(savedUser.getEmail(), otp);
             emailService.sendOtpEmail(savedUser.getEmail(), otp);
-            System.out.println("User registered successfully and OTP email sent to: " + savedUser.getEmail());
+            System.out.println("[DEBUG] OTP generation and email service completed");
         } catch (Exception e) {
+            System.err.println("[DEBUG] Exception in OTP/email process: " + e);
             System.err.println("User registration successful but OTP email failed for: " + savedUser.getEmail());
             System.err.println("Email error: " + e.getMessage());
             e.printStackTrace();
@@ -403,4 +405,8 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
 
     return Math.max(0, score); // Ensure score doesn't go below 0
 }
+    // Debug helper to retrieve latest OTP for an email
+    public String getLatestOtpForEmail(String email) {
+        return otpGenerationService.getLatestOtp(email);
+    }
 }

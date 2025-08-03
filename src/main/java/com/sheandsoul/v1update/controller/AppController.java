@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
@@ -247,5 +248,14 @@ public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest
         }
     }
 
-    
+    // DEBUG: Retrieve latest OTP for a given email
+    @GetMapping("/debug/latest-otp")
+    public ResponseEntity<?> getLatestOtp(@RequestParam String email) {
+        try {
+            String otp = appService.getLatestOtpForEmail(email);
+            return ResponseEntity.ok(Map.of("email", email, "otp", otp));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
 }
