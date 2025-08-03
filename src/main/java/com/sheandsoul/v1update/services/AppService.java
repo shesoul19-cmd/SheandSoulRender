@@ -59,9 +59,17 @@ public class AppService {
 
         User savedUser = userRepository.save(newUser);
 
-        String otp = otpGenerationService.generateOtp();
-        otpGenerationService.storeOtp(savedUser.getEmail(), otp);
-        emailService.sendOtpEmail(savedUser.getEmail(), otp);
+        try {
+            String otp = otpGenerationService.generateOtp();
+            otpGenerationService.storeOtp(savedUser.getEmail(), otp);
+            emailService.sendOtpEmail(savedUser.getEmail(), otp);
+            System.out.println("User registered successfully and OTP email sent to: " + savedUser.getEmail());
+        } catch (Exception e) {
+            System.err.println("User registration successful but OTP email failed for: " + savedUser.getEmail());
+            System.err.println("Email error: " + e.getMessage());
+            e.printStackTrace();
+            // Don't throw the exception - user is still registered, they can request OTP resend
+        }
 
         return savedUser;
         

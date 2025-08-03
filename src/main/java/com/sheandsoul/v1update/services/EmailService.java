@@ -18,6 +18,8 @@ public class EmailService {
 
     public void sendOtpEmail(String to, String otp) {
         try {
+            System.out.println("Attempting to send OTP email to: " + to + " with OTP: " + otp);
+            
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
 
@@ -36,9 +38,15 @@ public class EmailService {
             helper.setSubject("Your Email Verification Code");
 
             mailSender.send(mimeMessage);
+            System.out.println("OTP email sent successfully to: " + to);
         } catch (MessagingException e) {
-            System.err.println("Failed to send OTP email: " + e.getMessage());
-            throw new IllegalStateException("Failed to send OTP email.");
+            System.err.println("Failed to send OTP email to " + to + ": " + e.getMessage());
+            e.printStackTrace();
+            throw new IllegalStateException("Failed to send OTP email: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error sending OTP email to " + to + ": " + e.getMessage());
+            e.printStackTrace();
+            throw new IllegalStateException("Unexpected error sending OTP email: " + e.getMessage());
         }
     }
 }
