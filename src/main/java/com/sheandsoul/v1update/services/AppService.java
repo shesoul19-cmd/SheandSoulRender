@@ -5,6 +5,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,7 @@ public class AppService {
     private final OtpGenerationService otpGenerationService;
     private final EmailService emailService;
     private final BreastCancerSelfExamLogRepository selfExamLogRepository;
+    private static final Logger logger = LoggerFactory.getLogger(AppService.class);
 
     public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService, OtpGenerationService otpGenerationService, EmailService emailService, BreastCancerSelfExamLogRepository selfExamLogRepository) {
         this.userRepository = userRepository;
@@ -50,6 +53,7 @@ public class AppService {
     @Transactional
     public User registerUser(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {
+            logger.warn("Registration attempt with existing email: {}", request.email());
             throw new IllegalStateException("Email already in use");
         }
         User newUser = new User();
@@ -58,19 +62,17 @@ public class AppService {
         newUser.setEmailVerified(false);
 
         User savedUser = userRepository.save(newUser);
+        logger.info("User {} saved successfully with ID: {}", savedUser.getEmail(), savedUser.getId());
 
         try {
-            System.out.println("[DEBUG] Calling OTP generation and email service for user: " + savedUser.getEmail());
+            logger.info("Initiating OTP process for user: {}", savedUser.getEmail());
             String otp = otpGenerationService.generateOtp();
             otpGenerationService.storeOtp(savedUser.getEmail(), otp);
             emailService.sendOtpEmail(savedUser.getEmail(), otp);
-            System.out.println("[DEBUG] OTP generation and email service completed");
+            logger.info("OTP email process completed for user: {}", savedUser.getEmail());
         } catch (Exception e) {
-            System.err.println("[DEBUG] Exception in OTP/email process: " + e);
-            System.err.println("User registration successful but OTP email failed for: " + savedUser.getEmail());
-            System.err.println("Email error: " + e.getMessage());
-            e.printStackTrace();
-            // Don't throw the exception - user is still registered, they can request OTP resend
+            logger.error("OTP process failed for user {} after registration.", savedUser.getEmail(), e);
+            // Don't re-throw; user is registered and can request OTP resend.
         }
 
         return savedUser;
@@ -83,15 +85,18 @@ public class AppService {
             .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
         
         if(user.isEmailVerified()) {
+            logger.warn("Attempt to verify an already-verified email: {}", email);
             throw new IllegalStateException("Email is already verified.");
         }
 
         if (!otpGenerationService.isOtpValid(email, submittedOtp)) {
+            logger.warn("Invalid OTP '{}' submitted for email: {}", submittedOtp, email);
             throw new IllegalArgumentException("Invalid or expired OTP.");
         }
 
         user.setEmailVerified(true);
         userRepository.save(user);
+        logger.info("Email successfully verified for: {}", email);
 
         otpGenerationService.markOtpAsUsed(email);
     }
@@ -102,12 +107,15 @@ public class AppService {
             .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
 
         if (user.isEmailVerified()) {
+            logger.warn("OTP resend requested for already-verified email: {}", email);
             throw new IllegalStateException("Email is already verified.");
         }
 
+        logger.info("Resending OTP for user: {}", user.getEmail());
         String otp = otpGenerationService.generateOtp();
         otpGenerationService.storeOtp(user.getEmail(), otp);
         emailService.sendOtpEmail(user.getEmail(), otp);
+        logger.info("OTP resent successfully for user: {}", user.getEmail());
     }
 
     @Transactional

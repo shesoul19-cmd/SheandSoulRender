@@ -1,5 +1,7 @@
 package com.sheandsoul.v1update.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -11,20 +13,21 @@ import jakarta.mail.internet.MimeMessage;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
     public void sendOtpEmail(String to, String otp) {
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
-            System.out.println("Attempting to send OTP email to: " + to + " with OTP: " + otp);
+            logger.info("Attempting to send OTP email. To: {}, OTP: {}", to, otp);
             
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
 
             // Set the "From" address to match your Zoho username
-            helper.setFrom("support@sheandsoul.co.in");
+            helper.setFrom("support@sheandsoul.co.in", "She&Soul");
 
             String emailContent = "<h3>Hello,</h3>"
                                 + "<p>Thank you for signing up. Please use the following One-Time Password (OTP) to verify your email address:</p>"
@@ -38,15 +41,13 @@ public class EmailService {
             helper.setSubject("Your Email Verification Code");
 
             mailSender.send(mimeMessage);
-            System.out.println("OTP email sent successfully to: " + to);
+            logger.info("OTP email sent successfully to: {}", to);
         } catch (MessagingException e) {
-            System.err.println("Failed to send OTP email to " + to + ": " + e.getMessage());
-            e.printStackTrace();
-            throw new IllegalStateException("Failed to send OTP email: " + e.getMessage());
+            logger.error("Failed to send OTP email to {}: {}", to, e.getMessage(), e);
+            throw new IllegalStateException("Failed to send OTP email due to MessagingException.");
         } catch (Exception e) {
-            System.err.println("Unexpected error sending OTP email to " + to + ": " + e.getMessage());
-            e.printStackTrace();
-            throw new IllegalStateException("Unexpected error sending OTP email: " + e.getMessage());
+            logger.error("An unexpected error occurred while sending OTP email to {}: {}", to, e.getMessage(), e);
+            throw new IllegalStateException("Unexpected error sending OTP email.");
         }
     }
 }
