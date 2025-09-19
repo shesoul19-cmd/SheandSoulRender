@@ -50,6 +50,29 @@ public class AppService {
         this.selfExamLogRepository = selfExamLogRepository;
     }
 
+     @Transactional
+    public User findOrCreateUserForGoogleSignIn(String email, String name) {
+        // Check if a user with this email already exists
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        } else {
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            newUser.setEmailVerified(true);
+            Profile profile = new Profile();
+            profile.setUser(newUser);
+            profile.setName(name);
+            profile.setUserType(Profile.UserType.USER); // Default to USER
+
+            newUser.setProfile(profile);
+            
+            return userRepository.save(newUser);
+        }
+    }
+
     @Transactional
     public User registerUser(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {

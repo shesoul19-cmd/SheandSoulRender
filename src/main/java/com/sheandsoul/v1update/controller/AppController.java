@@ -1,6 +1,6 @@
 package com.sheandsoul.v1update.controller;
 
-import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -8,17 +8,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.sheandsoul.v1update.dto.AuthResponseDto;
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
+import com.sheandsoul.v1update.dto.GoogleSignInRequest;
 import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.MenstrualTrackingDto;
 import com.sheandsoul.v1update.dto.PartnerDataDto;
@@ -27,7 +33,6 @@ import com.sheandsoul.v1update.dto.ProfileResponse;
 import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.ResendOtpRequest;
 import com.sheandsoul.v1update.dto.SignUpRequest;
-import com.sheandsoul.v1update.dto.AuthResponseDto;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
 import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
@@ -79,6 +84,45 @@ public class AppController {
             return ResponseEntity.ok(prediction);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> signInWithGoogle(@RequestBody GoogleSignInRequest googleRequest) {
+        // Your Google Client ID (from the Google Cloud Console)
+        String googleClientId = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+            .setAudience(Collections.singletonList(googleClientId))
+            .build();
+
+        try {
+            GoogleIdToken idToken = verifier.verify(googleRequest.idToken());
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+
+                // This logic will find an existing user or create a new one
+                User user = appService.findOrCreateUserForGoogleSignIn(email, name);
+
+                // Generate a JWT for your app's authentication
+                final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+                final String jwt = jwtUtil.generateToken(userDetails);
+
+                AuthResponseDto responseDto = new AuthResponseDto(
+                    "Google Sign-In successful!",
+                    user.getId(),
+                    user.getEmail(),
+                    jwt
+                );
+                return ResponseEntity.ok(responseDto);
+
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid Google ID Token"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }
 
