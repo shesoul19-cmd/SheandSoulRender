@@ -69,9 +69,6 @@ public class Profile {
     private String deviceToken;
     private String languageCode;
 
-    public void setNickName(String nickname) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
     public enum UserType {
         USER, PARTNER
     }
