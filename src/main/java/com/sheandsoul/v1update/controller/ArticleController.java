@@ -12,10 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sheandsoul.v1update.entities.Article;
 import com.sheandsoul.v1update.entities.User;
-import com.sheandsoul.v1update.entities.UserServiceType;
 import com.sheandsoul.v1update.repository.ArticleRepository;
-import com.sheandsoul.v1update.services.MyUserDetailService;
 import com.sheandsoul.v1update.repository.ProfileRepository;
+import com.sheandsoul.v1update.services.MyUserDetailService;
 
 @CrossOrigin(origins = "http://localhost:8080")
 @RestController
@@ -40,9 +39,7 @@ public class ArticleController {
     @GetMapping("/get")
     public List<Article> getArticles(Authentication authentication){
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
-        return profileRepository.findByUserId(currentUser.getId())
-            .map(profile -> articleRepository.findByServiceType(profile.getPreferredServiceType()))
-            .orElseThrow(() -> new RuntimeException("User profile not found"));
+        return articleRepository.findAll();
     }
 
 }
