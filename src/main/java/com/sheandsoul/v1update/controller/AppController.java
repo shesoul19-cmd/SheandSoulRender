@@ -1,8 +1,11 @@
 package com.sheandsoul.v1update.controller;
 
+
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -42,6 +45,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/api")
 @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
 public class AppController {
+
+     private static final Logger logger = LoggerFactory.getLogger(AppController.class);
 
     private final AppService appService;
     private final MenstruationAssistantService menstruationAssistantService;
@@ -124,6 +129,7 @@ public class AppController {
 
     @PostMapping("/profile")
     public ResponseEntity<?> setupProfile(@Valid @RequestBody ProfileRequest profileRequest, Authentication authentication) {
+        logger.info("Received profile creation request: {}", profileRequest.toString());
         try {
             User currentUser = userDetailsService.findUserByEmail(authentication.getName());
             ProfileResponse response = appService.createOrUpdateProfile(profileRequest, currentUser);
@@ -134,7 +140,7 @@ public class AppController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             // Log the full stack trace for debugging
-            e.printStackTrace();
+           logger.error("Profile creation failed with an unexpected exception!", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Profile creation failed: " + e.getMessage()));
         }
     }
