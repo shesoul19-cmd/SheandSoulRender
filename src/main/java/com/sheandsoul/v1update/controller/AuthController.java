@@ -1,5 +1,8 @@
 package com.sheandsoul.v1update.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +21,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.sheandsoul.v1update.dto.AuthDto;
 import com.sheandsoul.v1update.dto.AuthResponseDto;
 import com.sheandsoul.v1update.dto.GoogleSignInRequest;
 import com.sheandsoul.v1update.dto.LoginRequest;
@@ -55,11 +57,28 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             throw new Exception("Incorrect username or password", e);
         }
-
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.email());
+final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.email());
+        final User user = userDetailsService.findUserByEmail(loginRequest.email()); // Get the full User object
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        return ResponseEntity.ok(new AuthDto(jwt));
+        // --- FIX: Return a Map that includes the user's name and matches the client's expected fields ---
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("message", "Login successful!");
+        responseBody.put("user_id", user.getId());
+        responseBody.put("email", user.getEmail());
+        responseBody.put("access_token", jwt);
+        responseBody.put("token_type", "bearer");
+
+        // Add the user's name from their profile.
+        // This checks for a null profile to prevent errors.
+        if (user.getProfile() != null && user.getProfile().getName() != null) {
+            responseBody.put("name", user.getProfile().getName());
+        } else {
+            // Fallback to the user's email if their name is not set in the profile
+            responseBody.put("name", user.getEmail());
+        }
+
+        return ResponseEntity.ok(responseBody);
     }
 
     @PostMapping("/google")
