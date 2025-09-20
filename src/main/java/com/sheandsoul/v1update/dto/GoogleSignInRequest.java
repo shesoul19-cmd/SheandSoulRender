@@ -1,9 +1,10 @@
 package com.sheandsoul.v1update.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.validation.constraints.NotBlank;
 
 public record  GoogleSignInRequest (
-  @JsonProperty("idToken") String idToken
+     @NotBlank String idToken
 ){
 
 }

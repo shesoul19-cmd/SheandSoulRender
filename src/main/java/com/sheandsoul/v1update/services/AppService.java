@@ -50,27 +50,25 @@ public class AppService {
         this.selfExamLogRepository = selfExamLogRepository;
     }
 
-     @Transactional
+    // --- FIX 1: This is the new method to handle Google Sign-In logic ---
+    @Transactional
     public User findOrCreateUserForGoogleSignIn(String email, String name) {
-        // Check if a user with this email already exists
-        Optional<User> existingUser = userRepository.findByEmail(email);
-
-        if (existingUser.isPresent()) {
-            return existingUser.get();
-        } else {
+        return userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
+            // Assign a secure, random password for users created via Google
             newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
-            newUser.setEmailVerified(true);
+            newUser.setEmailVerified(true); // Google accounts are already verified
+
+            // Create a basic profile to go with the user
             Profile profile = new Profile();
             profile.setUser(newUser);
             profile.setName(name);
-            profile.setUserType(Profile.UserType.USER); // Default to USER
-
+            profile.setUserType(Profile.UserType.USER); // Default to USER for Google sign-in
             newUser.setProfile(profile);
             
             return userRepository.save(newUser);
-        }
+        });
     }
 
     @Transactional
@@ -95,11 +93,9 @@ public class AppService {
             logger.info("OTP email process completed for user: {}", savedUser.getEmail());
         } catch (Exception e) {
             logger.error("OTP process failed for user {} after registration.", savedUser.getEmail(), e);
-            // Don't re-throw; user is registered and can request OTP resend.
         }
 
         return savedUser;
-        
     }
 
     @Transactional
@@ -141,117 +137,102 @@ public class AppService {
         logger.info("OTP resent successfully for user: {}", user.getEmail());
     }
 
+    // --- FIX 2: Refactored 'createProfile' to handle both creation and updates ---
     @Transactional
-    public ProfileResponse createProfile(ProfileRequest request, User user) {
-        if (user.getProfile() != null) {
-            throw new IllegalStateException("User already has a profile.");
-        }
-
-        Profile profile = new Profile();
+    public ProfileResponse createOrUpdateProfile(ProfileRequest request, User user) {
+        // Fetch the existing profile, or create a new one if it doesn't exist.
+        // This gracefully handles both new signups and Google Sign-In users.
+        Profile profile = Optional.ofNullable(user.getProfile()).orElse(new Profile());
         profile.setUser(user);
+        
         profile.setName(request.name());
         profile.setNickName(request.nickname());
-        profile.setUserType(request.userType());
-
-        if (request.userType() == Profile.UserType.USER) {
+    
+        if ("PARTNER".equalsIgnoreCase(request.userType())) {
+            profile.setUserType(Profile.UserType.PARTNER);
+        } else {
+            profile.setUserType(Profile.UserType.USER);
+        }
+    
+        if (profile.getUserType() == Profile.UserType.USER) {
             profile.setAge(request.age());
             profile.setHeight(request.height());
             profile.setWeight(request.weight());
-            // Set preferredServiceType only if provided, can be null initially
             if (request.preferredServiceType() != null) {
                 profile.setPreferredServiceType(request.preferredServiceType());
             }
             
-            Profile savedProfile = profileRepository.saveAndFlush(profile);
-            
-            String newCode;
-            do {
-                newCode = referralCodeService.generateCode(savedProfile.getId());
-            } while (profileRepository.existsByReferralCode(newCode));
-
-            savedProfile.setReferralCode(newCode);
-            savedProfile = profileRepository.save(savedProfile); // Save the profile again with referral code
-            
-            return new ProfileResponse(
-                savedProfile.getId(),
-                user.getId(),
-                savedProfile.getName(),
-                user.getEmail(),
-                savedProfile.getUserType(),
-                savedProfile.getReferralCode()
-            );
-
-        } else if (request.userType() == Profile.UserType.PARTNER) {
+            // Generate referral code only if it's a new profile
+            if (profile.getReferralCode() == null) {
+                Profile savedProfileForCode = profileRepository.saveAndFlush(profile);
+                String newCode;
+                do {
+                    newCode = referralCodeService.generateCode(savedProfileForCode.getId());
+                } while (profileRepository.existsByReferralCode(newCode));
+                savedProfileForCode.setReferralCode(newCode);
+            }
+    
+        } else if (profile.getUserType() == Profile.UserType.PARTNER) {
             if (request.referredByCode() == null || request.referredByCode().isBlank()) {
                 throw new IllegalArgumentException("Referral code is required for partner use.");
             }
             if (!profileRepository.existsByReferralCode(request.referredByCode())) {
                 throw new IllegalArgumentException("Invalid referral code: " + request.referredByCode());
             }
-            profile.setNickName(request.nickname());
             profile.setReferredCode(request.referredByCode());
-            
-            Profile savedProfile = profileRepository.save(profile);
-            
-            return new ProfileResponse(
-                savedProfile.getId(),
-                user.getId(),
-                savedProfile.getName(),
-                user.getEmail(),
-                savedProfile.getUserType(),
-                savedProfile.getReferralCode()
-            );
         }
         
-        throw new IllegalStateException("Invalid usage type specified.");
+        Profile finalSavedProfile = profileRepository.save(profile);
+    
+        return new ProfileResponse(
+            finalSavedProfile.getId(),
+            user.getId(),
+            finalSavedProfile.getName(),
+            user.getEmail(),
+            finalSavedProfile.getUserType(),
+            finalSavedProfile.getReferralCode()
+        );
     }
 
     public User loginUser(LoginRequest loginRequest) {
-    User user = userRepository.findByEmail(loginRequest.email())
-        .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-    if (!passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
-        throw new IllegalArgumentException("Invalid email or password");
+        User user = userRepository.findByEmail(loginRequest.email())
+            .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+        if (!passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+        return user;
     }
-    return user;
-}
 
-public User getUserById(Long userId) {
+    public User getUserById(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
     }
 
     @Transactional
     public ProfileServiceDto updateUserService(Long userId, ProfileServiceDto profileServiceDto) {
-    // 1. Find the profile by user ID or throw an exception if not found
-    Profile profile = profileRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-    UserServiceType newServiceType = profileServiceDto.getPreferredServiceType();
-    profile.setPreferredServiceType(newServiceType);
-    Profile updatedProfile = profileRepository.save(profile);
-    return new ProfileServiceDto(updatedProfile.getPreferredServiceType());
-}
-
+        UserServiceType newServiceType = profileServiceDto.getPreferredServiceType();
+        profile.setPreferredServiceType(newServiceType);
+        Profile updatedProfile = profileRepository.save(profile);
+        return new ProfileServiceDto(updatedProfile.getPreferredServiceType());
+    }
 
     @Transactional
-public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
-    Profile profile = profileRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+    public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-    // Store the previous values for comparison
-    LocalDate previousLastPeriodStartDate = profile.getLastPeriodStartDate();
-    Integer previousCycleLength = profile.getCycleLength();
-    
-    // Update the profile with new data
-    profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
-    profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
-    profile.setPeriodLength(updateDto.getPeriodLength());
-    profile.setCycleLength(updateDto.getCycleLength());
-    
-    profileRepository.save(profile);
-    return updateDto;
-    
-}
+        profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
+        profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
+        profile.setPeriodLength(updateDto.getPeriodLength());
+        profile.setCycleLength(updateDto.getCycleLength());
+        
+        profileRepository.save(profile);
+        return updateDto;
+    }
+
     public CyclePredictionDto predictNextCycle(Long userId){
         Profile profile = profileRepository.findByUserId(userId)
                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user Id : " + userId));
@@ -285,14 +266,8 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
 
     public String getCyclePredictionAsText(Long userId) {
         try {
-            // 1. Get the structured prediction data
             CyclePredictionDto prediction = predictNextCycle(userId);
-            
-            // 2. Format the dates into a simple, clear format
-            // Using a basic formatter here as the NLP service will handle localization.
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
-
-            // 3. Create the raw text string
             return String.format(
                 "The user's next period is predicted to start on %s and end on %s. " +
                 "Their most fertile window is predicted to be between %s and %s.",
@@ -302,7 +277,6 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
                 prediction.getNextFertileWindowEndDate().format(formatter)
             );
         } catch (Exception e) {
-            // Handle cases where prediction is not possible
             return "The user has not provided enough information to generate a cycle prediction. Please ask them to complete their menstrual cycle setup.";
         }
     }
@@ -324,7 +298,6 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-        // Update fields if they exist in the payload
         if (updateData.containsKey("age") && updateData.get("age") != null) {
             profile.setAge(((Number) updateData.get("age")).intValue());
         }
@@ -349,13 +322,14 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
     }
 
     public PartnerDataDto getPartnerData(Long userId){
-        Optional<Profile> partnerProfile = profileRepository.findByUserId(userId);
+        Profile partnerProfile = profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("No partner profile found for user ID: " + userId));
 
-        if(partnerProfile.isEmpty() || partnerProfile.get().getUserType() != Profile.UserType.PARTNER) {
-            throw new IllegalArgumentException("No partner profile found for user ID: " + userId);
+        if(partnerProfile.getUserType() != Profile.UserType.PARTNER) {
+            throw new IllegalArgumentException("User is not a partner.");
         }
 
-        String referralCode = partnerProfile.get().getReferredCode();
+        String referralCode = partnerProfile.getReferredCode();
         if(referralCode == null || referralCode.isBlank()) {
             throw new IllegalArgumentException("Partner profile does not have a referral code.");
         }
@@ -369,7 +343,6 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
             userProfile.getName(),
             cyclePrediction
         );
-       
     }
 
     @Transactional
@@ -408,35 +381,27 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
     }
 
     private int calculateRiskScoreFromMcq(Map<String, String> answers) {
-    int score = 0;
+        int score = 0;
+        if ("MENSTRUATION_START_LT_12".equals(answers.get("menstruation_start_age"))) score += 1;
+        if ("MENOPAUSE_YES_GT_55".equals(answers.get("menopause_status"))) score += 2;
+        if ("PREGNANCY_NO".equals(answers.get("pregnancy_history"))) score += 1;
+        if ("BREASTFED_NO".equals(answers.get("breastfeeding_history"))) score += 1;
+        if ("BREASTFED_NA".equals(answers.get("breastfeeding_history"))) score += 1;
+        if ("BREASTFED_YES_GT_6MO".equals(answers.get("breastfeeding_history"))) score -= 1;
+        if ("ALCOHOL_WEEKLY".equals(answers.get("alcohol_use"))) score += 1;
+        if ("ALCOHOL_DAILY".equals(answers.get("alcohol_use"))) score += 2;
+        if ("SMOKING_OCCASIONALLY".equals(answers.get("smoking_status"))) score += 1;
+        if ("SMOKING_REGULARLY".equals(answers.get("smoking_status"))) score += 2;
+        if ("HRT_YES_LT_5Y".equals(answers.get("hrt_use"))) score += 1;
+        if ("HRT_YES_GT_5Y".equals(answers.get("hrt_use"))) score += 2;
+        if ("OC_YES_LT_5Y".equals(answers.get("oral_contraceptives_use"))) score += 1;
+        if ("OC_YES_GT_5Y".equals(answers.get("oral_contraceptives_use"))) score += 2;
+        if ("YES_FIRST_DEGREE".equals(answers.get("family_history"))) score += 5;
+        if ("YES_ATYPICAL_HYPERPLASIA".equals(answers.get("personal_history_biopsy"))) score += 4;
+        if ("AGE_50_PLUS".equals(answers.get("age_group"))) score += 4;
+        return Math.max(0, score);
+    }
 
-    // Menstrual & Reproductive History
-    if ("MENSTRUATION_START_LT_12".equals(answers.get("menstruation_start_age"))) score += 1;
-    if ("MENOPAUSE_YES_GT_55".equals(answers.get("menopause_status"))) score += 2;
-    if ("PREGNANCY_NO".equals(answers.get("pregnancy_history"))) score += 1; // Nulliparity
-    if ("BREASTFED_NO".equals(answers.get("breastfeeding_history"))) score += 1;
-    if ("BREASTFED_NA".equals(answers.get("breastfeeding_history"))) score += 1; // Same as no
-    if ("BREASTFED_YES_GT_6MO".equals(answers.get("breastfeeding_history"))) score -= 1; // Protective factor
-
-    // Lifestyle & Hormonal Factors
-    if ("ALCOHOL_WEEKLY".equals(answers.get("alcohol_use"))) score += 1;
-    if ("ALCOHOL_DAILY".equals(answers.get("alcohol_use"))) score += 2;
-    if ("SMOKING_OCCASIONALLY".equals(answers.get("smoking_status"))) score += 1;
-    if ("SMOKING_REGULARLY".equals(answers.get("smoking_status"))) score += 2;
-    if ("HRT_YES_LT_5Y".equals(answers.get("hrt_use"))) score += 1;
-    if ("HRT_YES_GT_5Y".equals(answers.get("hrt_use"))) score += 2;
-    if ("OC_YES_LT_5Y".equals(answers.get("oral_contraceptives_use"))) score += 1;
-    if ("OC_YES_GT_5Y".equals(answers.get("oral_contraceptives_use"))) score += 2;
-
-    // Also include the original high-impact factors
-    if ("YES_FIRST_DEGREE".equals(answers.get("family_history"))) score += 5;
-    if ("YES_ATYPICAL_HYPERPLASIA".equals(answers.get("personal_history_biopsy"))) score += 4;
-    if ("AGE_50_PLUS".equals(answers.get("age_group"))) score += 4;
-
-
-    return Math.max(0, score); // Ensure score doesn't go below 0
-}
-    // Debug helper to retrieve latest OTP for an email
     public String getLatestOtpForEmail(String email) {
         return otpGenerationService.getLatestOtp(email);
     }

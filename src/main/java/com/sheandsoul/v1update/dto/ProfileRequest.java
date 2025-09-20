@@ -1,7 +1,6 @@
 package com.sheandsoul.v1update.dto;
 
 import com.sheandsoul.v1update.entities.UserServiceType;
-import com.sheandsoul.v1update.entities.Profile.UserType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 public record ProfileRequest(
     @NotBlank String name,
     String nickname,
-    @NotNull UserType userType,
+    @NotNull String userType,
 
     String preferredLanguage, // New field for preferred language
     // Fields for SELF_USE
