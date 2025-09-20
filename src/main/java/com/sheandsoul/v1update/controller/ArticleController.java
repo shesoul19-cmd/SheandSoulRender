@@ -2,7 +2,6 @@ package com.sheandsoul.v1update.controller;
 
 import java.util.List;
 
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,10 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sheandsoul.v1update.entities.Article;
-import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.repository.ArticleRepository;
-import com.sheandsoul.v1update.repository.ProfileRepository;
-import com.sheandsoul.v1update.services.MyUserDetailService;
 
 @CrossOrigin(origins = "http://localhost:8080")
 @RestController
@@ -22,13 +18,9 @@ import com.sheandsoul.v1update.services.MyUserDetailService;
 public class ArticleController {
 
     private final ArticleRepository articleRepository;
-    private final MyUserDetailService userDetailsService;
-    private final ProfileRepository profileRepository;
 
-    public ArticleController(ArticleRepository articleRepository, MyUserDetailService userDetailsService, ProfileRepository profileRepository){
+    public ArticleController(ArticleRepository articleRepository){
         this.articleRepository = articleRepository;
-        this.userDetailsService = userDetailsService;
-        this.profileRepository = profileRepository;
     }
 
     @PostMapping("/post")
@@ -37,8 +29,7 @@ public class ArticleController {
     }
 
     @GetMapping("/get")
-    public List<Article> getArticles(Authentication authentication){
-        User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+    public List<Article> getArticles(){
         return articleRepository.findAll();
     }
 
