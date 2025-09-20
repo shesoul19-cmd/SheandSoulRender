@@ -55,30 +55,36 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
             );
         } catch (BadCredentialsException e) {
-            throw new Exception("Incorrect username or password", e);
+            // It's better to return a proper error response
+            Map<String, Object> errorBody = new HashMap<>();
+            errorBody.put("message", "Incorrect username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorBody);
         }
-final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.email());
-        final User user = userDetailsService.findUserByEmail(loginRequest.email()); // Get the full User object
+
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.email());
+        final User user = userDetailsService.findUserByEmail(loginRequest.email());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        // --- FIX: Return a Map that includes the user's name and matches the client's expected fields ---
+        // ✅ START FIX: Create a response body that matches the Android client's expectations
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("message", "Login successful!");
         responseBody.put("user_id", user.getId());
         responseBody.put("email", user.getEmail());
-        responseBody.put("access_token", jwt);
+        responseBody.put("access_token", jwt); // Use "access_token" as the key
         responseBody.put("token_type", "bearer");
 
-        // Add the user's name from their profile.
-        // This checks for a null profile to prevent errors.
-        if (user.getProfile() != null && user.getProfile().getName() != null) {
+        // Add user's name and nickname from their profile
+        if (user.getProfile() != null) {
             responseBody.put("name", user.getProfile().getName());
+            responseBody.put("nickname", user.getProfile().getNickName());
         } else {
-            // Fallback to the user's email if their name is not set in the profile
-            responseBody.put("name", user.getEmail());
+            // Fallback if the profile hasn't been created yet
+            responseBody.put("name", user.getEmail()); // Use email as a fallback
+            responseBody.put("nickname", "");
         }
-
+        
         return ResponseEntity.ok(responseBody);
+        // ✅ END FIX
     }
 
     @PostMapping("/google")
