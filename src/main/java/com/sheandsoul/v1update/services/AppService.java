@@ -219,19 +219,24 @@ public class AppService {
         return new ProfileServiceDto(updatedProfile.getPreferredServiceType());
     }
 
-    @Transactional
-    public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
-        Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-        profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
-        profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
-        profile.setPeriodLength(updateDto.getPeriodLength());
-        profile.setCycleLength(updateDto.getCycleLength());
-        
-        profileRepository.save(profile);
-        return updateDto;
-    }
+@Transactional
+public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
+    // 1. Find the profile for the logged-in user
+    Profile profile = profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+
+    // 2. Update the profile with the new menstrual data
+    profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
+    profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
+    profile.setPeriodLength(updateDto.getPeriodLength());
+    profile.setCycleLength(updateDto.getCycleLength());
+    
+    // 3. Save the updated profile back to the database
+    profileRepository.save(profile);
+    
+    return updateDto; // Return the DTO to confirm the update
+}
 
     public CyclePredictionDto predictNextCycle(Long userId){
         Profile profile = profileRepository.findByUserId(userId)

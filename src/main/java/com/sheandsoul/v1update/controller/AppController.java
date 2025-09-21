@@ -159,14 +159,17 @@ public class AppController {
     }
 
 
-    @PutMapping("/menstrual-data")
-    public ResponseEntity<?> updateMenstrualEntity(
-        @Valid @RequestBody MenstrualTrackingDto menstrualDataDto
-        , Authentication authentication) {
-            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
-        appService.updateMenstrualData(currentUser.getId(), menstrualDataDto);
-        return ResponseEntity.ok(Map.of("message", "Menstrual data updated successfully!"));
-    }
+   // ... inside AppController class
+
+@PutMapping("/menstrual-data")
+public ResponseEntity<?> updateMenstrualEntity(
+    @Valid @RequestBody MenstrualTrackingDto menstrualDataDto,
+    Authentication authentication
+) {
+    User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+    appService.updateMenstrualData(currentUser.getId(), menstrualDataDto);
+    return ResponseEntity.ok(Map.of("message", "Menstrual data updated successfully!"));
+}
 
     @PutMapping("/language")
     public ResponseEntity<?> setUserLanguage(@RequestBody Map<String, String> payload, Authentication authentication) {
