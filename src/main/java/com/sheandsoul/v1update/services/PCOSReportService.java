@@ -1,5 +1,13 @@
 package com.sheandsoul.v1update.services;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.xhtmlrenderer.pdf.ITextRenderer;
+
 import com.lowagie.text.DocumentException;
 import com.sheandsoul.v1update.entities.BreastCancerExamLog;
 import com.sheandsoul.v1update.entities.PCOSAssesment;
@@ -12,20 +20,14 @@ import com.sheandsoul.v1update.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
-import org.xhtmlrenderer.pdf.ITextRenderer;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
 public class PCOSReportService {
 
+    private final PCOSAssessmentRepository pcosAssessmentRepository; // Corrected variable name
     private final ProfileRepository profileRepository;
-    private final PCOSAssessmentRepository pcosAssesmentRepository;
+    private final AppService appService;
     private final BreastCancerSelfExamLogRepository breastCancerSelfExamLogRepository;
     private final TemplateEngine templateEngine;
     private final UserRepository userRepository;
@@ -43,23 +45,20 @@ public class PCOSReportService {
     }
 
     private byte[] generatePcosReportPdf(Long profileId) throws DocumentException, IOException {
-        Profile profile = profileRepository.findById(profileId)
+        Profile profile = profileRepository.findById(profileId) // Assuming you have profileRepository
                 .orElseThrow(() -> new EntityNotFoundException("Profile not found with id: " + profileId));
 
-        PCOSAssesment assessment = pcosAssesmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(profileId)
+        PCOSAssesment assessment = pcosAssessmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(profileId)
                 .orElseThrow(() -> new EntityNotFoundException("PCOS Assessment not found for profile id: " + profileId));
 
+        // FIX 1: The AI prompt is now much more detailed, using the new fields.
         String prompt = buildPcosPrompt(profile, assessment);
-        // Step 1: Get the raw response from the AI service
-        String rawAiResponse = geminiService.getGeminiResponse(profile.getUser(), prompt);
-
-        // Step 2: Format the raw response into safe, valid HTML
+        String rawAiResponse = geminiService.getGeminiResponse(prompt);
         String formattedAiResponse = formatAiResponseForHtml(rawAiResponse);
 
         Context context = new Context();
         context.setVariable("profile", profile);
         context.setVariable("assessment", assessment);
-        // Step 3: Add the CORRECTLY formatted variable to the context
         context.setVariable("formattedAiResponse", formattedAiResponse);
 
         String htmlContent = templateEngine.process("reports/pcos-report", context);
@@ -74,18 +73,23 @@ public class PCOSReportService {
         return outputStream.toByteArray();
     }
 
+    // FIX 2: This method is completely updated to build a prompt with the new data.
     private String buildPcosPrompt(Profile profile, PCOSAssesment assessment) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Generate a detailed health report for a user with potential PCOS symptoms. ");
-        prompt.append("User Profile: Age - ").append(profile.getAge()).append(". ");
-        // Ensure riskLevel and symptoms are not null before accessing
-        if (assessment.getRiskLevel() != null) {
-            prompt.append("PCOS Assessment Details: Risk Level - ").append(assessment.getRiskLevel()).append(". ");
-        }
-        if (assessment.getSymptoms() != null) {
-            prompt.append("Symptoms: ").append(assessment.getSymptoms().toString()).append(". ");
-        }
-        prompt.append("Based on this data, provide a comprehensive analysis, potential health risks, and lifestyle recommendations. Use markdown for formatting: '***' for highlight-3, '**' for highlight-2, '*' for highlight-1, and '##' for headings. Make it personal and empathetic.");
+        prompt.append("Generate a detailed, empathetic, and professional health report for a user with potential PCOS symptoms. ");
+        prompt.append("The user's name is ").append(profile.getName()).append(" and their age is ").append(profile.getAge()).append(". ");
+        prompt.append("Their calculated risk level is '").append(assessment.getRiskLevel()).append("'. ");
+        prompt.append("Here are their answers to the screening quiz: ");
+        prompt.append("- Irregular periods? ").append(assessment.getCycleLengthDays() > 35 || assessment.getMissedPeriodsInLastYear() >= 4 ? "Yes" : "No").append(". ");
+        prompt.append("- Severe acne? ").append(assessment.getHasSevereAcne() ? "Yes" : "No").append(". ");
+        prompt.append("- Excess hair growth? ").append(assessment.getHasExcessHairGrowth() ? "Yes" : "No").append(". ");
+        prompt.append("- Thinning hair? ").append(assessment.getHasThinningHair() ? "Yes" : "No").append(". ");
+        prompt.append("- Doctor-confirmed ovarian cysts? ").append(assessment.getHasOvarianCystsConfirmedByUltrasound() ? "Yes" : "No").append(". ");
+        prompt.append("- Weight gain issues? ").append(assessment.getHasWeightGainOrObesity() ? "Yes" : "No").append(". ");
+        prompt.append("- Dark skin patches? ").append(assessment.getHasDarkSkinPatches() ? "Yes" : "No").append(". ");
+        prompt.append("- Family history of PCOS? ").append(assessment.getHasFamilyHistoryOfPCOS() ? "Yes" : "No").append(". ");
+        prompt.append("Based on this data, provide a comprehensive analysis covering what their risk level means, which symptoms are most indicative, potential health implications, and actionable lifestyle recommendations for diet, exercise, and stress management. ");
+        prompt.append("The tone should be supportive, not alarming. Use markdown for formatting: '***' for important highlights, '**' for bolded subheadings, '*' for italics, and '##' for main section headings. End with a clear disclaimer to consult a healthcare professional.");
         return prompt.toString();
     }
 

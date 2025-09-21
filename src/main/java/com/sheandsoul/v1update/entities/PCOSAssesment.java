@@ -1,11 +1,6 @@
 package com.sheandsoul.v1update.entities;
 
 import java.time.LocalDate;
-import java.util.Map;
-
-import org.hibernate.annotations.Type;
-
-import com.vladmihalcea.hibernate.type.json.JsonType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,14 +14,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Entity
-@Table(name = "pcos_assesment")
+@Table(name = "pcos_assessment") // Corrected table name to match your DB
 @Data
-@Getter
-@Setter
 public class PCOSAssesment {
 
     @Id
@@ -37,10 +28,6 @@ public class PCOSAssesment {
     @JoinColumn(name = "profile_id", nullable = false)
     private Profile profile;
 
-    @Type(JsonType.class)
-    @Column(name = "pcos_symptom", columnDefinition = "jsonb")
-    private Map<PCOSSymptoms, SymptomSeverity> symptoms;
-
     @Column(name = "assessment_date", nullable = false)
     private LocalDate assessmentDate;
 
@@ -48,4 +35,34 @@ public class PCOSAssesment {
     @Column(name = "pcos_risk_level")
     private PcosRiskLevel riskLevel;
 
+    // --- FIX: Add new fields to store quiz answers ---
+    @Column(name = "cycle_length_days")
+    private Integer cycleLengthDays;
+
+    @Column(name = "missed_periods_last_year")
+    private Integer missedPeriodsInLastYear;
+
+    @Column(name = "has_severe_acne")
+    private Boolean hasSevereAcne;
+
+    @Column(name = "has_excess_hair_growth")
+    private Boolean hasExcessHairGrowth;
+
+    @Column(name = "has_thinning_hair")
+    private Boolean hasThinningHair;
+
+    @Column(name = "has_ovarian_cysts_confirmed")
+    private Boolean hasOvarianCystsConfirmedByUltrasound;
+
+    @Column(name = "has_weight_gain")
+    private Boolean hasWeightGainOrObesity;
+
+    @Column(name = "has_dark_skin_patches")
+    private Boolean hasDarkSkinPatches;
+
+    @Column(name = "has_family_history")
+    private Boolean hasFamilyHistoryOfPCOS;
+
+    @Column(name = "has_high_stress")
+    private Boolean experiencesHighStress;
 }

@@ -22,8 +22,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.sheandsoul.v1update.dto.AuthResponseDto;
+import com.sheandsoul.v1update.dto.ForgotPasswordRequest;
 import com.sheandsoul.v1update.dto.GoogleSignInRequest;
 import com.sheandsoul.v1update.dto.LoginRequest;
+import com.sheandsoul.v1update.dto.ResetPasswordRequest;
+import com.sheandsoul.v1update.dto.VerifyEmailRequest;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
@@ -124,5 +127,43 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred during Google Sign-In.");
         }
     }
+
+    // ... inside the AuthController class
+
+@PostMapping("/password/forgot")
+public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    try {
+        appService.sendPasswordResetOtp(request.email());
+        return ResponseEntity.ok(Map.of("message", "A password reset OTP has been sent to your email."));
+    } catch (IllegalArgumentException e) {
+        // Return a generic message to prevent attackers from guessing registered emails
+        return ResponseEntity.ok(Map.of("message", "If an account with that email exists, a reset OTP has been sent."));
+    }
+}
+
+@PostMapping("/password/verify-otp")
+public ResponseEntity<?> verifyPasswordOtp(@Valid @RequestBody VerifyEmailRequest request) {
+    try {
+        boolean isValid = appService.verifyPasswordResetOtp(request.email(), request.otp());
+        if (isValid) {
+            return ResponseEntity.ok(Map.of("message", "OTP is valid. You can now reset your password."));
+        } else {
+            // This case is handled by the exception below, but included for clarity
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Invalid or expired OTP."));
+        }
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+}
+
+@PostMapping("/password/reset")
+public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    try {
+        appService.resetUserPassword(request.email(), request.otp(), request.newPassword());
+        return ResponseEntity.ok(Map.of("message", "Your password has been reset successfully."));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+}
 
 }

@@ -405,4 +405,46 @@ public class AppService {
     public String getLatestOtpForEmail(String email) {
         return otpGenerationService.getLatestOtp(email);
     }
+
+    // ... inside the AppService class
+
+@Transactional
+public void sendPasswordResetOtp(String email) {
+    // 1. Check if the user exists
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+
+    // 2. Generate and store a new OTP
+    String otp = otpGenerationService.generateOtp();
+    otpGenerationService.storeOtp(user.getEmail(), otp);
+    
+    // 3. Send the OTP using a specific password reset email
+    emailService.sendPasswordResetEmail(user.getEmail(), otp);
+}
+
+public boolean verifyPasswordResetOtp(String email, String otp) {
+    if (!otpGenerationService.isOtpValid(email, otp)) {
+        throw new IllegalArgumentException("Invalid or expired OTP.");
+    }
+    return true;
+}
+
+@Transactional
+public void resetUserPassword(String email, String otp, String newPassword) {
+    // 1. Security Check: Re-verify the OTP one last time before changing the password
+    if (!otpGenerationService.isOtpValid(email, otp)) {
+        throw new IllegalArgumentException("Invalid or expired OTP. Please try the process again.");
+    }
+
+    // 2. Find the user
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+    // 3. Encode the new password and save it
+    user.setPassword(passwordEncoder.encode(newPassword));
+    userRepository.save(user);
+
+    // 4. Invalidate the OTP so it cannot be used again
+    otpGenerationService.markOtpAsUsed(email);
+}
 }

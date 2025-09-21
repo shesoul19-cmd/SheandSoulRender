@@ -50,4 +50,29 @@ public class EmailService {
             throw new IllegalStateException("Unexpected error sending OTP email.");
         }
     }
+    // ... inside the EmailService class
+
+public void sendPasswordResetEmail(String to, String otp) {
+    MimeMessage mimeMessage = mailSender.createMimeMessage();
+    try {
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+        helper.setFrom("support@sheandsoul.co.in", "She&Soul");
+
+        String emailContent = "<h3>Hello,</h3>"
+                + "<p>You requested to reset your password. Please use the following One-Time Password (OTP):</p>"
+                + "<h2>" + otp + "</h2>"
+                + "<p>This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>"
+                + "<br>"
+                + "<p>Best regards,<br>She&Soul Team</p>";
+
+        helper.setText(emailContent, true);
+        helper.setTo(to);
+        helper.setSubject("Your Password Reset Code");
+
+        mailSender.send(mimeMessage);
+    } catch (Exception e) {
+        // Log the error
+        throw new IllegalStateException("Failed to send password reset email.");
+    }
+}
 }
