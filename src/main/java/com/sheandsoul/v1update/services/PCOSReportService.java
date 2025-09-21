@@ -44,34 +44,39 @@ public class PCOSReportService {
         return generatePcosReportPdf(profile.getId());
     }
 
-    private byte[] generatePcosReportPdf(Long profileId) throws DocumentException, IOException {
-        Profile profile = profileRepository.findById(profileId) // Assuming you have profileRepository
-                .orElseThrow(() -> new EntityNotFoundException("Profile not found with id: " + profileId));
+    // Inside PCOSReportService.java
 
-        PCOSAssesment assessment = pcosAssessmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(profileId)
-                .orElseThrow(() -> new EntityNotFoundException("PCOS Assessment not found for profile id: " + profileId));
+private byte[] generatePcosReportPdf(Long profileId) throws DocumentException, IOException {
+    Profile profile = profileRepository.findById(profileId)
+            .orElseThrow(() -> new EntityNotFoundException("Profile not found with id: " + profileId));
 
-        // FIX 1: The AI prompt is now much more detailed, using the new fields.
-        String prompt = buildPcosPrompt(profile, assessment);
-        String rawAiResponse = geminiService.getGeminiResponse(prompt);
-        String formattedAiResponse = formatAiResponseForHtml(rawAiResponse);
+    PCOSAssesment assessment = pcosAssessmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(profileId)
+            .orElseThrow(() -> new EntityNotFoundException("PCOS Assessment not found for profile id: " + profileId));
 
-        Context context = new Context();
-        context.setVariable("profile", profile);
-        context.setVariable("assessment", assessment);
-        context.setVariable("formattedAiResponse", formattedAiResponse);
+    String prompt = buildPcosPrompt(profile, assessment);
+    
+    // FIX: Call getGeminiResponse with only the prompt string
+    String rawAiResponse = geminiService.getGeminiResponse(prompt); 
+    
+    // This sanitization step is now crucial
+    String formattedAiResponse = formatAiResponseForHtml(rawAiResponse);
 
-        String htmlContent = templateEngine.process("reports/pcos-report", context);
+    Context context = new Context();
+    context.setVariable("profile", profile);
+    context.setVariable("assessment", assessment);
+    context.setVariable("formattedAiResponse", formattedAiResponse); // Pass the sanitized HTML
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ITextRenderer renderer = new ITextRenderer();
-        renderer.setDocumentFromString(htmlContent);
-        renderer.layout();
-        renderer.createPDF(outputStream, false);
-        renderer.finishPDF();
+    String htmlContent = templateEngine.process("reports/pcos-report", context);
 
-        return outputStream.toByteArray();
-    }
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    ITextRenderer renderer = new ITextRenderer();
+    renderer.setDocumentFromString(htmlContent);
+    renderer.layout();
+    renderer.createPDF(outputStream, false); // changed to false, true is for finishing
+    renderer.finishPDF();
+
+    return outputStream.toByteArray();
+}
 
     // FIX 2: This method is completely updated to build a prompt with the new data.
     private String buildPcosPrompt(Profile profile, PCOSAssesment assessment) {

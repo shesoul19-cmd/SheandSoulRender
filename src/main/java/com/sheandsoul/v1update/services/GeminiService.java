@@ -20,7 +20,7 @@ import com.sheandsoul.v1update.entities.UserServiceType;
 @Service
 public class GeminiService {
 
-    @Value("${gemini.api.key}")
+    @Value("${GEMINI_API_KEY:${gemini.api.key}}")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
