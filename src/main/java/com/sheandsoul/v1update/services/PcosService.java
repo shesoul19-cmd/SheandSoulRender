@@ -85,5 +85,12 @@ public PCOSAssesment assessAndSave(Long userId, PCOSAssesmentRequest request) {
 
     return pcosAssessmentRepository.save(assessment);
 }
+@Transactional
+public boolean hasCompletedAssessment(Long userId) {
+    // Find the user's profile first
+    Profile userProfile = appService.findProfileByUserId(userId);
+    // Check if any assessment exists for that profile
+    return pcosAssessmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(userProfile.getId()).isPresent();
+}
 
 }
