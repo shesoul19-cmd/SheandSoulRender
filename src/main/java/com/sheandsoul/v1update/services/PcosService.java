@@ -68,12 +68,15 @@ public PCOSAssesment assessAndSave(Long userId, PCOSAssesmentRequest request) {
     }
 
     // --- Step 4: Populate and Save the Entity ---
-    PCOSAssesment assessment = new PCOSAssesment();
-    assessment.setProfile(userProfile);
-    assessment.setAssessmentDate(LocalDate.now());
-    assessment.setRiskLevel(riskLevel); // Now 'riskLevel' is guaranteed to have a value
+    PCOSAssesment assessment = pcosAssessmentRepository
+            .findTopByProfileIdOrderByAssessmentDateDesc(userProfile.getId())
+            .orElseGet(PCOSAssesment::new); // If it doesn't exist, create a new one.
 
-    // Map all the answers from the request to the entity
+    // Set or update all fields
+    assessment.setProfile(userProfile);
+    assessment.setAssessmentDate(LocalDate.now()); // Always update to the latest date
+    assessment.setRiskLevel(riskLevel);
+
     assessment.setCycleLengthDays(request.cycleLengthDays());
     assessment.setMissedPeriodsInLastYear(request.missedPeriodsInLastYear());
     assessment.setHasSevereAcne(request.hasSevereAcne());
@@ -85,6 +88,8 @@ public PCOSAssesment assessAndSave(Long userId, PCOSAssesmentRequest request) {
     assessment.setHasFamilyHistoryOfPCOS(request.hasFamilyHistoryOfPCOS());
     assessment.setExperiencesHighStress(request.experiencesHighStress());
 
+    // JPA's save method will automatically UPDATE if the entity already exists,
+    // or INSERT if it's new.
     return pcosAssessmentRepository.save(assessment);
 }
 @Transactional
