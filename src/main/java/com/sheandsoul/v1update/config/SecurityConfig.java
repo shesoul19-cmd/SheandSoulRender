@@ -1,5 +1,7 @@
 package com.sheandsoul.v1update.config;
 
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,8 +9,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import java.util.Arrays;
-
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,7 +50,18 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/","/index.html","/api/authenticate", "/api/signup", "/api/verify-email", "/api/resend-otp", "/ws-chat/**", "/api/subscription/**").permitAll()
+                .requestMatchers(
+                "/",
+                "/index.html",
+                "/api/authenticate",
+                "/api/signup",
+                "/api/google", // Also a good idea to ensure this is public
+                "/api/verify-email",
+                "/api/resend-otp",
+                "/ws-chat/**",
+                "/api/subscription/**",
+                "/api/password/**" // ✅ ADD THIS LINE
+            ).permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
