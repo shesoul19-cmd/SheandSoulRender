@@ -51,25 +51,38 @@ public class AppService {
     }
 
     // --- FIX 1: This is the new method to handle Google Sign-In logic ---
-    @Transactional
-    public User findOrCreateUserForGoogleSignIn(String email, String name) {
-        return userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail(email);
-            // Assign a secure, random password for users created via Google
-            newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
-            newUser.setEmailVerified(true); // Google accounts are already verified
+   // Inside AppService.java
 
-            // Create a basic profile to go with the user
-            Profile profile = new Profile();
-            profile.setUser(newUser);
-            profile.setName(name);
-            profile.setUserType(Profile.UserType.USER); // Default to USER for Google sign-in
-            newUser.setProfile(profile);
-            
-            return userRepository.save(newUser);
-        });
+@Transactional
+public User findOrCreateUserForGoogleSignIn(String email, String name) {
+    // Find the user, or initialize a new one if they don't exist
+    User user = userRepository.findByEmail(email).orElseGet(() -> {
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+        newUser.setEmailVerified(true); // Google accounts are verified
+        return newUser;
+    });
+
+    // ✅ --- START OF FIX --- ✅
+    // Get the user's profile, or create a new one if it doesn't exist
+    Profile profile = user.getProfile();
+    if (profile == null) {
+        profile = new Profile();
+        profile.setUser(user);
+        profile.setUserType(Profile.UserType.USER); // Default to USER
     }
+
+    // If the profile doesn't have a name, set it from the Google info
+    if (profile.getName() == null || profile.getName().isBlank()) {
+        profile.setName(name);
+    }
+
+    // Associate the profile with the user and save
+    user.setProfile(profile);
+    return userRepository.save(user);
+    // ✅ --- END OF FIX --- ✅
+}
 
     @Transactional
     public User registerUser(SignUpRequest request) {
