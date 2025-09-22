@@ -1,6 +1,7 @@
 package com.sheandsoul.v1update.controller;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sheandsoul.v1update.dto.PCOSAssesmentRequest;
+import com.sheandsoul.v1update.dto.PcosAssessmentDetailsDto;
 import com.sheandsoul.v1update.entities.PCOSAssesment;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.MyUserDetailService;
@@ -56,5 +58,20 @@ public class PcosController {
             .body(Map.of("error", e.getMessage()));
     }
 }
+ @GetMapping("/assessment/latest")
+    public ResponseEntity<?> getLatestAssessment(Authentication authentication) {
+        try {
+            User currentUser = myUserDetailsService.findUserByEmail(authentication.getName());
+            Optional<PcosAssessmentDetailsDto> assessmentDetails = pcosService.getLatestAssessmentDetails(currentUser.getId());
+
+            return assessmentDetails
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to retrieve assessment details."));
+        }
+    }
 
 }

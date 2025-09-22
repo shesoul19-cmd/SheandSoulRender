@@ -1,10 +1,12 @@
 package com.sheandsoul.v1update.services;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 import com.sheandsoul.v1update.dto.PCOSAssesmentRequest;
+import com.sheandsoul.v1update.dto.PcosAssessmentDetailsDto;
 import com.sheandsoul.v1update.entities.PCOSAssesment;
 import com.sheandsoul.v1update.entities.PcosRiskLevel;
 import com.sheandsoul.v1update.entities.Profile;
@@ -92,5 +94,11 @@ public boolean hasCompletedAssessment(Long userId) {
     // Check if any assessment exists for that profile
     return pcosAssessmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(userProfile.getId()).isPresent();
 }
+ @Transactional
+    public Optional<PcosAssessmentDetailsDto> getLatestAssessmentDetails(Long userId) {
+        Profile userProfile = appService.findProfileByUserId(userId);
+        return pcosAssessmentRepository.findTopByProfileIdOrderByAssessmentDateDesc(userProfile.getId())
+                .map(PcosAssessmentDetailsDto::fromEntity);
+    }
 
 }
