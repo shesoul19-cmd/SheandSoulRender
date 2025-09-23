@@ -31,6 +31,7 @@ import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.ResendOtpRequest;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
+import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
@@ -99,13 +100,44 @@ public class AppController {
                 "User registered successfully! Please check your email for an OTP.",
                 user.getId(),
                 user.getEmail(),
-                jwt
+                jwt,
+                null, // name is not set yet
+                null, // nickname is not set yet
+                false // isProfileComplete is false for new users
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
+    @GetMapping("/profile/status")
+    public ResponseEntity<?> getProfileStatus(Authentication authentication) {
+        try {
+            User user = userDetailsService.findUserByEmail(authentication.getName());
+            Profile profile = user.getProfile();
+            
+            // A profile is "complete" if it exists and key onboarding fields are filled.
+            boolean isComplete = profile != null && profile.getAge() != null && profile.getLastPeriodStartDate() != null;
+            
+            String name = (profile != null) ? profile.getName() : user.getEmail();
+            String nickname = (profile != null) ? profile.getNickName() : "";
+            
+            // Using the AuthResponseDto for a consistent response structure.
+            AuthResponseDto responseDto = new AuthResponseDto(
+                "Profile status retrieved.",
+                user.getId(),
+                user.getEmail(),
+                null, // No new token is issued here
+                name,
+                nickname,
+                isComplete
+            );
+            return ResponseEntity.ok(responseDto);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
 
     @PostMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@Valid @RequestBody VerifyEmailRequest request){

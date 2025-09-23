@@ -1,6 +1,7 @@
 package com.sheandsoul.v1update.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -22,14 +23,23 @@ public class AuthResponseDto {
 
     @JsonProperty("token_type")
     private String tokenType = "bearer";
+
+    private String name;
+    private String nickname;
+
+    @JsonProperty("is_profile_complete")
+    private Boolean isProfileComplete;
     /**
      * Convenience constructor to set tokenType to default "bearer".
      */
-    public AuthResponseDto(String message, Long userId, String email, String accessToken) {
+   public AuthResponseDto(String message, Long userId, String email, String accessToken, String name, String nickname, Boolean isProfileComplete) {
         this.message = message;
         this.userId = userId;
         this.email = email;
         this.accessToken = accessToken;
         this.tokenType = "bearer";
+        this.name = name;
+        this.nickname = nickname;
+        this.isProfileComplete = isProfileComplete;
     }
 }

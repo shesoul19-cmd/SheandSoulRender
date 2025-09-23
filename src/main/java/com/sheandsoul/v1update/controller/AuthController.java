@@ -23,6 +23,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.sheandsoul.v1update.dto.AuthResponseDto;
 import com.sheandsoul.v1update.dto.ForgotPasswordRequest;
 import com.sheandsoul.v1update.dto.GoogleSignInRequest;
 import com.sheandsoul.v1update.dto.GoogleSignInResult;
@@ -30,6 +31,7 @@ import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.ResetPasswordRequest;
 import com.sheandsoul.v1update.dto.UserProfileDto;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
+import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
@@ -72,27 +74,26 @@ public class AuthController {
         final User user = userDetailsService.findUserByEmail(loginRequest.email());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        // ✅ START FIX: Create a response body that matches the Android client's expectations
-        Map<String, Object> responseBody = new HashMap<>();
-        responseBody.put("message", "Login successful!");
-        responseBody.put("user_id", user.getId());
-        responseBody.put("email", user.getEmail());
-        responseBody.put("access_token", jwt); // Use "access_token" as the key
-        responseBody.put("token_type", "bearer");
+        Profile profile = user.getProfile();
+        boolean isProfileComplete = profile != null && profile.getAge() != null && profile.getLastPeriodStartDate() != null;
 
-        // Add user's name and nickname from their profile
-        if (user.getProfile() != null) {
-            responseBody.put("name", user.getProfile().getName());
-            responseBody.put("nickname", user.getProfile().getNickName());
-        } else {
-            // Fallback if the profile hasn't been created yet
-            responseBody.put("name", user.getEmail()); // Use email as a fallback
-            responseBody.put("nickname", "");
-        }
-        
-        return ResponseEntity.ok(responseBody);
-        // ✅ END FIX
+        String name = (profile != null) ? profile.getName() : user.getEmail();
+        String nickname = (profile != null) ? profile.getNickName() : "";
+
+        // ✅ START FIX: Create a response body that matches the Android client's expectations
+        AuthResponseDto responseDto = new AuthResponseDto(
+            "Login successful!",
+            user.getId(),
+            user.getEmail(),
+            jwt,
+            name,
+            nickname,
+            isProfileComplete
+        );
+        return ResponseEntity.ok(responseDto);
     }
+        // ✅ END FIX
+    
 
     @PostMapping("/google")
     public ResponseEntity<?> handleGoogleSignIn(@Valid @RequestBody GoogleSignInRequest signInRequest) {
@@ -113,6 +114,7 @@ public class AuthController {
 
                 final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
                 final String appJwt = jwtUtil.generateToken(userDetails);
+                boolean isProfileComplete = !result.isNewUser();
 
                 // ✅ BUILD A RESPONSE LIKE THE MAIN LOGIN ENDPOINT
                 Map<String, Object> responseBody = new HashMap<>();
