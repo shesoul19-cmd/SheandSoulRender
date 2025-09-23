@@ -158,6 +158,21 @@ public class AppController {
         }
     }
 
+    @PutMapping("/profile/device-token")
+    public ResponseEntity<?> updateDeviceToken(@RequestBody Map<String, String> payload, Authentication authentication) {
+        String token = payload.get("deviceToken");
+        if (token == null || token.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "deviceToken is required."));
+        }
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            appService.updateUserDeviceToken(currentUser.getId(), token);
+            return ResponseEntity.ok(Map.of("message", "Device token updated successfully."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
 
    // ... inside AppController class
 

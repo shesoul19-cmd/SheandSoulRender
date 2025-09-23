@@ -21,9 +21,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.sheandsoul.v1update.dto.AuthResponseDto;
 import com.sheandsoul.v1update.dto.ForgotPasswordRequest;
 import com.sheandsoul.v1update.dto.GoogleSignInRequest;
+import com.sheandsoul.v1update.dto.GoogleSignInResult;
 import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.ResetPasswordRequest;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
@@ -96,6 +96,7 @@ public class AuthController {
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
             .build();
 
+        
         try {
             GoogleIdToken idToken = verifier.verify(signInRequest.idToken());
             if (idToken != null) {
@@ -103,30 +104,35 @@ public class AuthController {
                 String email = payload.getEmail();
                 String name = (String) payload.get("name");
 
-                // Use the service method to find or create the user
-                User user = appService.findOrCreateUserForGoogleSignIn(email, name);
+                GoogleSignInResult result = appService.findOrCreateUserForGoogleSignIn(email, name);
+                User user = result.user();
 
-                // Generate your app's JWT token for the user
                 final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
                 final String appJwt = jwtUtil.generateToken(userDetails);
 
-                // Return the same response structure as your normal signup
-                AuthResponseDto responseDto = new AuthResponseDto(
-                    "Google Sign-In successful.",
-                    user.getId(),
-                    user.getEmail(),
-                    appJwt
-                );
-                return ResponseEntity.ok(responseDto);
+                // ✅ BUILD A RESPONSE LIKE THE MAIN LOGIN ENDPOINT
+                Map<String, Object> responseBody = new HashMap<>();
+                responseBody.put("message", "Google Sign-In successful!");
+                responseBody.put("user_id", user.getId());
+                responseBody.put("email", user.getEmail());
+                responseBody.put("access_token", appJwt);
+                responseBody.put("token_type", "bearer");
+                responseBody.put("name", user.getProfile().getName());
+                responseBody.put("nickname", user.getProfile().getNickName());
+                // This is the crucial flag for the client!
+                responseBody.put("is_profile_complete", !result.isNewUser());
+
+                return ResponseEntity.ok(responseBody);
 
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Google ID token.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid Google ID token."));
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred during Google Sign-In.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An error occurred."));
         }
     }
+    
 
     // ... inside the AuthController class
 

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
+import com.sheandsoul.v1update.dto.GoogleSignInResult;
 import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.MenstrualTrackingDto;
 import com.sheandsoul.v1update.dto.PartnerDataDto;
@@ -54,34 +55,33 @@ public class AppService {
    // Inside AppService.java
 
 @Transactional
-public User findOrCreateUserForGoogleSignIn(String email, String name) {
-    // Find the user, or initialize a new one if they don't exist
+public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String name) {
+    boolean isNewUser = false; // Flag to track if the profile is new
+
     User user = userRepository.findByEmail(email).orElseGet(() -> {
         User newUser = new User();
         newUser.setEmail(email);
         newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
-        newUser.setEmailVerified(true); // Google accounts are verified
+        newUser.setEmailVerified(true);
         return newUser;
     });
 
-    // ✅ --- START OF FIX --- ✅
-    // Get the user's profile, or create a new one if it doesn't exist
     Profile profile = user.getProfile();
     if (profile == null) {
+        isNewUser = true; // This is a new user who needs onboarding
         profile = new Profile();
         profile.setUser(user);
-        profile.setUserType(Profile.UserType.USER); // Default to USER
+        profile.setUserType(Profile.UserType.USER);
     }
 
-    // If the profile doesn't have a name, set it from the Google info
     if (profile.getName() == null || profile.getName().isBlank()) {
         profile.setName(name);
     }
 
-    // Associate the profile with the user and save
     user.setProfile(profile);
-    return userRepository.save(user);
-    // ✅ --- END OF FIX --- ✅
+    User savedUser = userRepository.save(user);
+
+    return new GoogleSignInResult(savedUser, isNewUser);
 }
 
     @Transactional
@@ -464,5 +464,13 @@ public void resetUserPassword(String email, String otp, String newPassword) {
 
     // 4. Invalidate the OTP so it cannot be used again
     otpGenerationService.markOtpAsUsed(email);
-}
+}    
+
+    @Transactional
+    public void updateUserDeviceToken(Long userId, String token) {
+        Profile profile = profileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+        profile.setDeviceToken(token);
+        profileRepository.save(profile);
+    }
 }
