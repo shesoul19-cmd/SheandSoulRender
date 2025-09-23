@@ -9,8 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,12 +28,14 @@ import com.sheandsoul.v1update.dto.GoogleSignInRequest;
 import com.sheandsoul.v1update.dto.GoogleSignInResult;
 import com.sheandsoul.v1update.dto.LoginRequest;
 import com.sheandsoul.v1update.dto.ResetPasswordRequest;
+import com.sheandsoul.v1update.dto.UserProfileDto;
 import com.sheandsoul.v1update.dto.VerifyEmailRequest;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.services.AppService;
 import com.sheandsoul.v1update.services.MyUserDetailService;
 import com.sheandsoul.v1update.util.JwtUtil;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 
 @RestController
@@ -169,6 +173,17 @@ public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest 
         return ResponseEntity.ok(Map.of("message", "Your password has been reset successfully."));
     } catch (IllegalArgumentException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+}
+
+@GetMapping("/profile/me")
+public ResponseEntity<?> getMyProfile(Authentication authentication) {
+    try {
+        String email = authentication.getName();
+        UserProfileDto userProfileDto = appService.getUserProfile(email);
+        return ResponseEntity.ok(userProfileDto);
+    } catch (EntityNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
     }
 }
 

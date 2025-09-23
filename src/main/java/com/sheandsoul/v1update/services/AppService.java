@@ -20,6 +20,7 @@ import com.sheandsoul.v1update.dto.ProfileRequest;
 import com.sheandsoul.v1update.dto.ProfileResponse;
 import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.SignUpRequest;
+import com.sheandsoul.v1update.dto.UserProfileDto;
 import com.sheandsoul.v1update.entities.BreastCancerExamLog;
 import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.SymptomLocation;
@@ -472,5 +473,11 @@ public void resetUserPassword(String email, String otp, String newPassword) {
             .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
         profile.setDeviceToken(token);
         profileRepository.save(profile);
+    }
+    
+    public UserProfileDto getUserProfile(String email) {
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found"));
+        return UserProfileDto.from(user);
     }
 }
