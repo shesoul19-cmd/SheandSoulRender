@@ -274,7 +274,7 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
         prediction.setNextFollicularEndDate(nextOvulationDate);
         prediction.setNextOvulationDate(nextOvulationDate);
         prediction.setNextOvulationEndDate(nextOvulationDate.plusDays(1));
-        prediction.setNextLutealStartDate(nextOvulationDate.plusDays(1));
+        prediction.setNextLutealStartDate(nextOvulationDate);
         prediction.setNextLutealEndDate(nextOvulationDate.plusDays(14));
         prediction.setNextFertileWindowStartDate(nextOvulationDate.minusDays(5));
         prediction.setNextFertileWindowEndDate(nextOvulationDate.plusDays(1));

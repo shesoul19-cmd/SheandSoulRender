@@ -32,7 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 .env
+firebase-service-account.json
+echo "src/main/resources/firebase-service-account.json" >> .gitignore
 
 
 
-
+src/main/resources/firebase-service-account.json

@@ -60,7 +60,8 @@ public class SecurityConfig {
                 "/api/resend-otp",
                 "/ws-chat/**",
                 "/api/subscription/**",
-                "/api/password/**" // ✅ ADD THIS LINE
+                "/api/password/**",
+                "/api/notification/send" // ✅ ADD THIS LINE
             ).permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
