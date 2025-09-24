@@ -1,17 +1,18 @@
 package com.sheandsoul.v1update.services;
 
-import com.sheandsoul.v1update.dto.CyclePredictionDto;
-import com.sheandsoul.v1update.entities.Profile;
-import com.sheandsoul.v1update.entities.User;
-import com.sheandsoul.v1update.repository.ProfileRepository;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
+import com.sheandsoul.v1update.dto.CyclePredictionDto;
+import com.sheandsoul.v1update.entities.Profile;
+import com.sheandsoul.v1update.entities.User;
+import com.sheandsoul.v1update.repository.ProfileRepository;
 
 @Service
 public class NotificationSchedulerService {
@@ -36,7 +37,7 @@ public class NotificationSchedulerService {
      * This job runs every day at 9:00 AM server time.
      * Cron format: "second minute hour day-of-month month day-of-week"
      */
-    @Scheduled(cron = "0 0 9 * * ?")
+    @Scheduled(cron = "0 6 0 * * ?")
     public void sendDailyPeriodReminders() {
         logger.info("Starting daily period reminder job...");
 
