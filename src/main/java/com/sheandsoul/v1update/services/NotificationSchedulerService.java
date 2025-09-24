@@ -37,7 +37,7 @@ public class NotificationSchedulerService {
      * This job runs every day at 9:00 AM server time.
      * Cron format: "second minute hour day-of-month month day-of-week"
      */
-    @Scheduled(cron = "0 6 0 * * ?")
+    @Scheduled(cron = "0 15 0 * * ?")
     public void sendDailyPeriodReminders() {
         logger.info("Starting daily period reminder job...");
 
