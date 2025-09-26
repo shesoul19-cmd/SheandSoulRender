@@ -39,10 +39,11 @@ public class AppService {
     private final ReferralCodeService referralCodeService;
     private final OtpGenerationService otpGenerationService;
     private final EmailService emailService;
+    private final NotificationService notificationService;
     private final BreastCancerSelfExamLogRepository selfExamLogRepository;
     private static final Logger logger = LoggerFactory.getLogger(AppService.class);
 
-    public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService, OtpGenerationService otpGenerationService, EmailService emailService, BreastCancerSelfExamLogRepository selfExamLogRepository) {
+    public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService, OtpGenerationService otpGenerationService, EmailService emailService, BreastCancerSelfExamLogRepository selfExamLogRepository, NotificationService notificationService) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
@@ -50,6 +51,7 @@ public class AppService {
         this.otpGenerationService = otpGenerationService;
         this.emailService = emailService;
         this.selfExamLogRepository = selfExamLogRepository;
+        this.notificationService = notificationService;
     }
 
     // --- FIX 1: This is the new method to handle Google Sign-In logic ---
@@ -95,6 +97,17 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
         newUser.setEmail(request.email());
         newUser.setPassword(passwordEncoder.encode(request.password()));
         newUser.setEmailVerified(false);
+        
+        Profile newProfile = new Profile();
+        newProfile.setUser(newUser); // Link the profile to the user
+        newProfile.setUserType(Profile.UserType.USER); // Default user type
+        newProfile.setName(request.email()); // Use email as a temporary name
+
+    // 3. If a device token was sent, set it on the new profile
+        request.deviceToken().ifPresent(newProfile::setDeviceToken);
+
+    // 4. Link the user to the profile
+        newUser.setProfile(newProfile);
 
         User savedUser = userRepository.save(newUser);
         logger.info("User {} saved successfully with ID: {}", savedUser.getEmail(), savedUser.getId());
@@ -108,6 +121,18 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
         } catch (Exception e) {
             logger.error("OTP process failed for user {} after registration.", savedUser.getEmail(), e);
         }
+         request.deviceToken().ifPresent(token -> {
+        try {
+            logger.info("Attempting to send welcome notification to user {}", savedUser.getEmail());
+            String title = "Welcome to She&Soul! ✨";
+            String body = "Thank you for joining. You are now a part of the She&Soul community.";
+            notificationService.sendNotification(token, title, body);
+            logger.info("Welcome notification sent successfully.");
+        } catch (Exception e) {
+            // Important: We log the error but don't stop the signup process if the notification fails.
+            logger.error("Failed to send welcome notification for user {}: {}", savedUser.getEmail(), e.getMessage());
+        }
+    });
 
         return savedUser;
     }
