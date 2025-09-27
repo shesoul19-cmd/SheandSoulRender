@@ -3,6 +3,7 @@ package com.sheandsoul.v1update.controller;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,11 +33,13 @@ public class ArticleController {
     }
 
     @GetMapping("/get")
+    @Cacheable("articles")
     public List<Article> getArticles(){
         return articleRepository.findAll();
     }
      // ✅ START FIX: Add this new method to fetch a single article by its ID
     @GetMapping("/{id}")
+    @Cacheable(value = "article", key = "#id")
     public ResponseEntity<Article> getArticleById(@PathVariable Long id) {
         // Find the article in the database by its ID
         Optional<Article> articleOptional = articleRepository.findById(id);
