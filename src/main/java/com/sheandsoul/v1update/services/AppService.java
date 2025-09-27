@@ -84,6 +84,19 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
     user.setProfile(profile);
     User savedUser = userRepository.save(user);
 
+    if (isNewUser && profile.getDeviceToken() != null && !profile.getDeviceToken().isBlank()) {
+        try {
+            logger.info("Attempting to send welcome notification to new Google user {}", savedUser.getEmail());
+            String title = "Welcome to She&Soul! ✨";
+            String body = "Thank you for joining with Google. You are now a part of the She&Soul community.";
+            notificationService.sendNotification(profile.getDeviceToken(), title, body);
+            logger.info("Welcome notification sent successfully to Google user.");
+        } catch (Exception e) {
+            // Log the error but don't fail the sign-in process
+            logger.error("Failed to send welcome notification for new Google user {}: {}", savedUser.getEmail(), e.getMessage());
+        }
+    }
+
     return new GoogleSignInResult(savedUser, isNewUser);
 }
 
