@@ -84,7 +84,7 @@ public class GeminiService {
     }
 
     public String getGeminiResponse(String userPrompt) {
-        String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey;
+        String apiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -118,7 +118,7 @@ public class GeminiService {
     }
 
     public String getGeminiResponse(User user, String userMessage) {
-        String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey;
+        String apiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey;
 
         String prompt = buildPrompt(user, userMessage);
 
