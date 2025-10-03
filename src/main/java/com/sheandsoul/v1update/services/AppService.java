@@ -445,6 +445,29 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
             cyclePrediction
         );
     }
+    public String getMenstrualLogHistoryAsText(Long userId) {
+    List<MenstrualCycleLogDto> history = this.getMenstrualLogHistory(userId);
+
+    if (history.isEmpty()) {
+        return "I couldn't find any previous cycle information for you. Please make sure you've logged a period in the app!";
+    }
+
+    // The list is sorted by most recent, so the first item is the latest one.
+    MenstrualCycleLogDto latestLog = history.get(0);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
+
+    return String.format(
+        "Of course! Here's the information from your last logged cycle:\n\n" +
+        "• **Period Started:** %s\n" +
+        "• **Period Ended:** %s\n" +
+        "• **Period Length:** %d days\n" +
+        "• **Full Cycle Length:** %d days",
+        latestLog.getPeriodStartDate().format(formatter),
+        latestLog.getPeriodEndDate().format(formatter),
+        latestLog.getPeriodLength(),
+        latestLog.getCycleLength()
+    );
+}
 
     @Transactional
     public BreastCancerExamLog createBreastCancerExamLog(Long userId, Map<SymptomLocation, SymptomSide> symptoms) {

@@ -67,7 +67,11 @@ public class MentalHealthAssistantService implements AssistantService {
         if ("GET_CYCLE_PREDICTION".equals(intent)) {
             // This response is generated locally, not by the AI, so no sanitization needed.
             rawResponse = appService.getCyclePredictionAsText(user.getId());
-        } else {
+        }else if ("PREVIOUS_CYCLE_INFO".equals(intent)) { // ✅ ADD THIS BLOCK
+        // This is the new logic to handle requests for previous cycle data.
+        rawResponse = appService.getMenstrualLogHistoryAsText(user.getId());
+        }
+         else {
             String prompt = buildUnifiedPrompt(message, user.getProfile(), "en");
             String geminiResponse = geminiService.getGeminiResponse(user, prompt);
             // Sanitize the response from the AI before further processing.
@@ -97,24 +101,40 @@ public class MentalHealthAssistantService implements AssistantService {
         if (lowerCaseMessage.contains("predict") || lowerCaseMessage.contains("next period") || lowerCaseMessage.contains("cycle")) {
             return "GET_CYCLE_PREDICTION";
         }
+        if (lowerCaseMessage.contains("previous") || lowerCaseMessage.contains("last period") || lowerCaseMessage.contains("previou cycle")) {
+            return "PREVIOUS_CYCLE_INFO";
+        }
         return "GENERAL_QUESTION";
     }
 
     private String buildUnifiedPrompt(String userMessage, Profile userProfile, String language) {
         return String.format(
-            """
-            You are 'Maya', a friendly, caring, and knowledgeable menstrual health assistant for a user named %s.
+             """
+    You are 'Maya', a friendly, caring, and knowledgeable AI assistant for the She&Soul app.
 
-            Your instructions are:
-            1.  Provide a helpful and safe response to the user's question below.
-            2.  Your entire response MUST be in natural-sounding %s.
-            3.  Format the response using Markdown for clarity (e.g., using lists or bold text).
-            4.  You MUST NOT provide medical diagnoses or prescribe medication.
-            5.  You MUST end your response with a clear disclaimer, for example: "Please remember, I am an AI assistant. Consult a healthcare professional for medical advice."
+    **Platform Context:**
+    You represent She&Soul, a comprehensive women's wellness platform. Its key features include: period tracking, PCOS assessment, next period prediction, understanding menstrual phases, meditation music, a feature to add a partner for support, expert articles, and this AI chatbot. The core mission of She&Soul is to advance women's wellness.
 
-            ---
-            User Question: "%s"
-            """,
+    **Your Instructions are:**
+    1.  **Promote She&Soul Exclusively:** If the user asks for recommendations for period tracking apps or similar tools, you MUST exclusively recommend the **She&Soul** app. Confidently position it as the best and most comprehensive choice for their wellness journey.
+
+    2.  **STRICTLY PROHIBITED - No Competitors:** Under no circumstances should you ever mention, recommend, or acknowledge any other women's health or period tracking apps. Do not name competitors like Flo, Clue, Glow, or any others. Politely deflect and refocus the conversation back to the features and benefits of She&Soul.
+
+    3.  **Explain "What is She&Soul?":** If the user asks a direct question like "What is She&Soul?", you must enthusiastically describe it using the details from the 'Platform Context' section. Frame it as a dedicated partner for a woman's entire wellness journey, highlighting its key features in a clear, benefit-oriented way.
+
+    4.  **Provide Helpful Responses:** Within these rules, provide a helpful and safe response to the user's question below, using your knowledge of women's health.
+
+    5.  **Language:** Your entire response MUST be in natural-sounding %s.
+
+    6.  **Formatting:** Format the response using Markdown for clarity (e.g., using lists or bold text).
+
+    7.  **Medical Disclaimer:** You MUST NOT provide medical diagnoses or prescribe medication.
+
+    8.  **Closing Disclaimer:** You MUST end every response with a clear disclaimer, for example: "Please remember, I am an AI assistant. For medical advice, please consult a healthcare professional."
+
+    ---
+    User Question for a user named %s: "%s"
+    """,
             userProfile.getName(), language, userMessage
         );
     }
