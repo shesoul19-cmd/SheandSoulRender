@@ -22,6 +22,17 @@ public record PCOSAssesmentRequest(
     @NotNull Boolean hasWeightGainOrObesity, // Yes/No
     @NotNull Boolean hasDarkSkinPatches, // Yes/No
     @NotNull Boolean hasFamilyHistoryOfPCOS, // Yes/No
-    @NotNull Boolean experiencesHighStress // Yes/No
+    @NotNull Boolean experiencesHighStress, // Yes/No
+
+    @NotNull Boolean hasMoodSwings,
+    @NotNull Boolean hasSleepDisturbances,
+    @NotNull Boolean experiencesFatigue,
+    @NotNull Boolean hasStrongCravings,
+    @NotNull Boolean hasInsulinResistance,
+    @NotNull Boolean hasPelvicPain,
+    @NotNull Boolean hasFrequentHeadaches,
+    @NotNull Boolean hasDifficultyConceiving,
+    @NotNull Boolean hasHighBloodPressure,
+    @NotNull Boolean hasSkinTags
 ) {
 }

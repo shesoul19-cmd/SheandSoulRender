@@ -65,4 +65,35 @@ public class PCOSAssesment {
 
     @Column(name = "has_high_stress")
     private Boolean experiencesHighStress;
+
+     // ✅ ADD THESE 10 NEW COLUMNS FOR QUESTIONS 11-20
+    @Column(name = "has_mood_swings")
+    private Boolean hasMoodSwings;
+
+    @Column(name = "has_sleep_disturbances")
+    private Boolean hasSleepDisturbances;
+
+    @Column(name = "experiences_fatigue")
+    private Boolean experiencesFatigue;
+
+    @Column(name = "has_strong_cravings")
+    private Boolean hasStrongCravings;
+
+    @Column(name = "has_insulin_resistance")
+    private Boolean hasInsulinResistance;
+
+    @Column(name = "has_pelvic_pain")
+    private Boolean hasPelvicPain;
+
+    @Column(name = "has_frequent_headaches")
+    private Boolean hasFrequentHeadaches;
+
+    @Column(name = "has_difficulty_conceiving")
+    private Boolean hasDifficultyConceiving;
+
+    @Column(name = "has_high_blood_pressure")
+    private Boolean hasHighBloodPressure;
+
+    @Column(name = "has_skin_tags")
+    private Boolean hasSkinTags;
 }
