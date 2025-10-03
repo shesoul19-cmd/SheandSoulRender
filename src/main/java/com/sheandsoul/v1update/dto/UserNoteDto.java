@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 public class UserNoteDto {
     private Long id;
+    private String title; // ✅ ADD TITLE FIELD
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sheandsoul.v1update.dto.NoteRequestDto;
 import com.sheandsoul.v1update.dto.UserNoteDto;
 import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.UserNote;
@@ -26,17 +27,19 @@ public class NoteService {
     }
 
     @Transactional
-    public UserNoteDto createNote(Long userId, String content) {
+    public UserNoteDto createNote(Long userId, NoteRequestDto request) { // ✅ Use DTO
         Profile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Profile not found for user ID: " + userId));
         
         UserNote note = new UserNote();
         note.setProfile(profile);
-        note.setContent(content);
+        note.setTitle(request.getTitle()); // ✅ SET TITLE
+        note.setContent(request.getContent());
         
         UserNote savedNote = noteRepository.save(note);
         return toDto(savedNote);
     }
+    
 
     public List<UserNoteDto> getNotesForUser(Long userId) {
         Profile profile = profileRepository.findByUserId(userId)
@@ -49,7 +52,7 @@ public class NoteService {
     }
 
     @Transactional
-    public UserNoteDto updateNote(Long noteId, String content, Long userId) {
+    public UserNoteDto updateNote(Long noteId, NoteRequestDto request, Long userId) { // ✅ Use DTO
         UserNote note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new EntityNotFoundException("Note not found with ID: " + noteId));
 
@@ -57,7 +60,8 @@ public class NoteService {
             throw new SecurityException("User not authorized to update this note.");
         }
 
-        note.setContent(content);
+        note.setTitle(request.getTitle()); // ✅ UPDATE TITLE
+        note.setContent(request.getContent());
         UserNote updatedNote = noteRepository.save(note);
         return toDto(updatedNote);
     }
@@ -77,6 +81,7 @@ public class NoteService {
     private UserNoteDto toDto(UserNote note) {
         UserNoteDto dto = new UserNoteDto();
         dto.setId(note.getId());
+        dto.setTitle(note.getTitle()); // ✅ MAP TITLE
         dto.setContent(note.getContent());
         dto.setCreatedAt(note.getCreatedAt());
         dto.setUpdatedAt(note.getUpdatedAt());

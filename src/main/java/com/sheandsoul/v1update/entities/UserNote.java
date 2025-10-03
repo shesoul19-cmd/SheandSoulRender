@@ -28,6 +28,9 @@ public class UserNote {
     @JoinColumn(name = "profile_id", nullable = false)
     private Profile profile;
 
+    @Column(nullable = false)
+    private String title;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 

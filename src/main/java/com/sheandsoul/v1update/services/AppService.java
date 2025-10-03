@@ -2,8 +2,10 @@ package com.sheandsoul.v1update.services;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
 import com.sheandsoul.v1update.dto.GoogleSignInResult;
 import com.sheandsoul.v1update.dto.LoginRequest;
+import com.sheandsoul.v1update.dto.MenstrualCycleLogDto;
 import com.sheandsoul.v1update.dto.MenstrualTrackingDto;
 import com.sheandsoul.v1update.dto.PartnerDataDto;
 import com.sheandsoul.v1update.dto.ProfileRequest;
@@ -22,7 +25,6 @@ import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.UserProfileDto;
 import com.sheandsoul.v1update.entities.BreastCancerExamLog;
-import com.sheandsoul.v1update.entities.MenstrualCycleLog;
 import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
@@ -278,31 +280,42 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
 
  @Transactional
     public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
-        // 1. Find the profile for the logged-in user
         Profile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-        // 2. IMPORTANT: Update the main Profile entity with the latest data.
-        // This ensures predictions always use the most current information.
+        // Update the main Profile entity with the latest data
         profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
         profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
         profile.setPeriodLength(updateDto.getPeriodLength());
         profile.setCycleLength(updateDto.getCycleLength());
-        profileRepository.save(profile); // Save the updated profile
+        profileRepository.save(profile);
 
-        // 3. Create a new log entry for historical tracking
-        MenstrualCycleLog cycleLog = new MenstrualCycleLog();
+        // Create a new log entry for historical tracking
+        com.sheandsoul.v1update.entities.MenstrualCycleLog cycleLog = new com.sheandsoul.v1update.entities.MenstrualCycleLog();
         cycleLog.setProfile(profile);
         cycleLog.setPeriodStartDate(updateDto.getLastPeriodStartDate());
         cycleLog.setPeriodEndDate(updateDto.getLastPeriodEndDate());
         cycleLog.setPeriodLength(updateDto.getPeriodLength());
         cycleLog.setCycleLength(updateDto.getCycleLength());
         
-        menstrualCycleLogRepository.save(cycleLog); // Save the new historical log
+        menstrualCycleLogRepository.save(cycleLog);
         
         logger.info("Logged new menstrual cycle data for user ID: {}", userId);
 
-        return updateDto; // Return the DTO to confirm the update
+        // --- ✅ ADD THIS LOG LIMIT LOGIC ---
+        long logCount = menstrualCycleLogRepository.countByProfileId(profile.getId());
+        if (logCount > 30) {
+            // Find the oldest log entry
+            menstrualCycleLogRepository.findTopByProfileIdOrderByLogDateAsc(profile.getId())
+                .ifPresent(oldestLog -> {
+                    // Delete the oldest log
+                    menstrualCycleLogRepository.delete(oldestLog);
+                    logger.info("Deleted oldest menstrual log (ID: {}) for user ID: {} to maintain 12-log limit.", oldestLog.getId(), userId);
+                });
+        }
+        // --- END OF NEW LOGIC ---
+
+        return updateDto;
     }
 
     public CyclePredictionDto predictNextCycle(Long userId){
@@ -445,6 +458,16 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
         examLog.setSymptoms(symptoms);
 
         return selfExamLogRepository.save(examLog);
+    }
+    public List<MenstrualCycleLogDto> getMenstrualLogHistory(Long userId) {
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+
+        List<com.sheandsoul.v1update.entities.MenstrualCycleLog> logs = menstrualCycleLogRepository.findByProfileIdOrderByLogDateDesc(profile.getId());
+
+        return logs.stream()
+                .map(MenstrualCycleLogDto::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Transactional

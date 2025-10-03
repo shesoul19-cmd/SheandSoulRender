@@ -1,6 +1,7 @@
 package com.sheandsoul.v1update.controller;
 
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sheandsoul.v1update.dto.AuthResponseDto;
 import com.sheandsoul.v1update.dto.CyclePredictionDto;
 import com.sheandsoul.v1update.dto.LoginRequest;
+import com.sheandsoul.v1update.dto.MenstrualCycleLogDto;
 import com.sheandsoul.v1update.dto.MenstrualTrackingDto;
 import com.sheandsoul.v1update.dto.PartnerDataDto;
 import com.sheandsoul.v1update.dto.ProfileRequest;
@@ -300,6 +302,16 @@ public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest
             return ResponseEntity.ok(Map.of("response", response));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+     @GetMapping("/menstrual-logs")
+    public ResponseEntity<List<MenstrualCycleLogDto>> getMenstrualLogs(Authentication authentication) {
+        try {
+            User currentUser = userDetailsService.findUserByEmail(authentication.getName());
+            List<MenstrualCycleLogDto> history = appService.getMenstrualLogHistory(currentUser.getId());
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null); // Or return a proper error message
         }
     }
 
