@@ -101,7 +101,7 @@ public class MentalHealthAssistantService implements AssistantService {
         if (lowerCaseMessage.contains("predict") || lowerCaseMessage.contains("next period") || lowerCaseMessage.contains("cycle")) {
             return "GET_CYCLE_PREDICTION";
         }
-        if (lowerCaseMessage.contains("previous") || lowerCaseMessage.contains("last period") || lowerCaseMessage.contains("previou cycle")) {
+        if (lowerCaseMessage.contains("previous") || lowerCaseMessage.contains("last period") || lowerCaseMessage.contains("previous cycle")) {
             return "PREVIOUS_CYCLE_INFO";
         }
         return "GENERAL_QUESTION";
