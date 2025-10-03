@@ -22,12 +22,14 @@ import com.sheandsoul.v1update.dto.ProfileServiceDto;
 import com.sheandsoul.v1update.dto.SignUpRequest;
 import com.sheandsoul.v1update.dto.UserProfileDto;
 import com.sheandsoul.v1update.entities.BreastCancerExamLog;
+import com.sheandsoul.v1update.entities.MenstrualCycleLog;
 import com.sheandsoul.v1update.entities.Profile;
 import com.sheandsoul.v1update.entities.SymptomLocation;
 import com.sheandsoul.v1update.entities.SymptomSide;
 import com.sheandsoul.v1update.entities.User;
 import com.sheandsoul.v1update.entities.UserServiceType;
 import com.sheandsoul.v1update.repository.BreastCancerSelfExamLogRepository;
+import com.sheandsoul.v1update.repository.MenstrualCycleLogRepository;
 import com.sheandsoul.v1update.repository.ProfileRepository;
 import com.sheandsoul.v1update.repository.UserRepository;
 
@@ -42,14 +44,16 @@ public class AppService {
     private final NotificationService notificationService;
     private final BreastCancerSelfExamLogRepository selfExamLogRepository;
     private static final Logger logger = LoggerFactory.getLogger(AppService.class);
+    private final MenstrualCycleLogRepository menstrualCycleLogRepository;
 
-    public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService, OtpGenerationService otpGenerationService, EmailService emailService, BreastCancerSelfExamLogRepository selfExamLogRepository, NotificationService notificationService) {
+    public AppService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder, ReferralCodeService referralCodeService, OtpGenerationService otpGenerationService, EmailService emailService, BreastCancerSelfExamLogRepository selfExamLogRepository, NotificationService notificationService, MenstrualCycleLogRepository menstrualCycleLogRepository) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.referralCodeService = referralCodeService;
         this.otpGenerationService = otpGenerationService;
         this.emailService = emailService;
+        this.menstrualCycleLogRepository = menstrualCycleLogRepository;
         this.selfExamLogRepository = selfExamLogRepository;
         this.notificationService = notificationService;
     }
@@ -272,37 +276,63 @@ public GoogleSignInResult findOrCreateUserForGoogleSignIn(String email, String n
     }
 
 
-@Transactional
-public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
-    // 1. Find the profile for the logged-in user
-    Profile profile = profileRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
+ @Transactional
+    public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDto updateDto) {
+        // 1. Find the profile for the logged-in user
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user ID: " + userId));
 
-    // 2. Update the profile with the new menstrual data
-    profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
-    profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
-    profile.setPeriodLength(updateDto.getPeriodLength());
-    profile.setCycleLength(updateDto.getCycleLength());
-    
-    // 3. Save the updated profile back to the database
-    profileRepository.save(profile);
-    
-    return updateDto; // Return the DTO to confirm the update
-}
+        // 2. IMPORTANT: Update the main Profile entity with the latest data.
+        // This ensures predictions always use the most current information.
+        profile.setLastPeriodStartDate(updateDto.getLastPeriodStartDate());
+        profile.setLastPeriodEndDate(updateDto.getLastPeriodEndDate());
+        profile.setPeriodLength(updateDto.getPeriodLength());
+        profile.setCycleLength(updateDto.getCycleLength());
+        profileRepository.save(profile); // Save the updated profile
+
+        // 3. Create a new log entry for historical tracking
+        MenstrualCycleLog cycleLog = new MenstrualCycleLog();
+        cycleLog.setProfile(profile);
+        cycleLog.setPeriodStartDate(updateDto.getLastPeriodStartDate());
+        cycleLog.setPeriodEndDate(updateDto.getLastPeriodEndDate());
+        cycleLog.setPeriodLength(updateDto.getPeriodLength());
+        cycleLog.setCycleLength(updateDto.getCycleLength());
+        
+        menstrualCycleLogRepository.save(cycleLog); // Save the new historical log
+        
+        logger.info("Logged new menstrual cycle data for user ID: {}", userId);
+
+        return updateDto; // Return the DTO to confirm the update
+    }
 
     public CyclePredictionDto predictNextCycle(Long userId){
         Profile profile = profileRepository.findByUserId(userId)
-               .orElseThrow(() -> new IllegalArgumentException("Profile not found for user Id : " + userId));
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for user Id : " + userId));
         
-        LocalDate lastPeriodDate = profile.getLastPeriodStartDate();
+        LocalDate lastLoggedPeriodStartDate = profile.getLastPeriodStartDate();
         Integer cycleLength = profile.getCycleLength();
         Integer periodLength = profile.getPeriodLength();
 
-        if(lastPeriodDate == null || cycleLength ==  null  || periodLength == null) {
+        if(lastLoggedPeriodStartDate == null || cycleLength == null || periodLength == null) {
             throw new IllegalArgumentException("Insufficient data to predict next cycle.");
         }
 
-        LocalDate nextPeriodStartDate = lastPeriodDate.plusDays(cycleLength);
+        LocalDate today = LocalDate.now();
+        LocalDate effectiveStartDate = lastLoggedPeriodStartDate;
+
+        // --- START OF NEW LOGIC ---
+        // Calculate when the next cycle *should have* started based on old data.
+        LocalDate predictedMostRecentCycleStart = lastLoggedPeriodStartDate.plusDays(cycleLength);
+
+        // If today's date is after when the last predicted cycle should have started,
+        // it means the user missed logging it. We'll use that predicted date as our new base.
+        if (today.isAfter(predictedMostRecentCycleStart.plusDays(periodLength))) {
+            effectiveStartDate = predictedMostRecentCycleStart;
+        }
+        // --- END OF NEW LOGIC ---
+
+        // All subsequent calculations now use the 'effectiveStartDate'
+        LocalDate nextPeriodStartDate = effectiveStartDate.plusDays(cycleLength);
         LocalDate followingPeriodStartDate = nextPeriodStartDate.plusDays(cycleLength);
         LocalDate nextOvulationDate = followingPeriodStartDate.minusDays(14); 
 
@@ -320,6 +350,7 @@ public MenstrualTrackingDto updateMenstrualData(Long userId, MenstrualTrackingDt
 
         return prediction;
     }
+
 
     public String getCyclePredictionAsText(Long userId) {
         try {

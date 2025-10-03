@@ -1,13 +1,16 @@
 package com.sheandsoul.v1update.entities;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import org.hibernate.annotations.Type;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,6 +20,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -82,4 +86,12 @@ public class Profile {
     @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> medicalSummary;
+    
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Prevents infinite loops when serializing to JSON
+    private List<MenstrualCycleLog> menstrualCycleLogs;
+
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Prevents infinite loops when serializing to JSON
+    private List<UserNote> userNotes;
 }
