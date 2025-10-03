@@ -135,7 +135,7 @@ public class MentalHealthAssistantService implements AssistantService {
     ---
     User Question for a user named %s: "%s"
     """,
-            userProfile.getName(), language, userMessage
+            language, userProfile.getName(), userMessage
         );
     }
 }
