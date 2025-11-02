@@ -18,14 +18,8 @@ import java.time.Duration;
 @Configuration
 public class RedisCacheConfig {
 
-    /**
-     * This bean creates a properly configured JSON serializer.
-     * It registers the JavaTimeModule to correctly handle LocalDateTime,
-     * and enables default typing for robust serialization.
-     */
     @Bean
     public GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer() {
-        // This validator is needed for security with default typing
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator
                 .builder()
                 .allowIfBaseType(Object.class)
@@ -38,23 +32,14 @@ public class RedisCacheConfig {
         return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 
-    /**
-     * This bean defines the default cache configuration, now using
-     * our properly configured JSON serializer.
-     */
     @Bean
     public RedisCacheConfiguration cacheConfiguration(GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer) {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
                 .disableCachingNullValues()
-                // Use our new, configured serializer
                 .serializeValuesWith(SerializationPair.fromSerializer(jackson2JsonRedisSerializer));
     }
 
-    /**
-     * This bean applies custom TTLs to specific caches, also using
-     * our new, configured serializer.
-     */
     @Bean
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer(GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer) {
         return (builder) -> builder
@@ -68,7 +53,7 @@ public class RedisCacheConfig {
                                 .entryTtl(Duration.ofDays(1))
                                 .disableCachingNullValues()
                                 .serializeValuesWith(SerializationPair.fromSerializer(jackson2JsonRedisSerializer)))
-                .withCacheConfiguration("userNotes", // We keep the config from earlier
+                .withCacheConfiguration("userNotes",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(30))
                                 .disableCachingNullValues()
