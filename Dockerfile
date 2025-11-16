@@ -1,23 +1,15 @@
 # ---- Stage 1: Build the application ----
-# Use a Maven image that includes the JDK to build the project
-FROM maven:3.8.5-openjdk-17 AS builder
+FROM maven:3.9-eclipse-temurin-17 AS builder
+WORKDIR /app
+COPY . .
+RUN mvn -B clean package -DskipTests
 
-# Set the working directory inside the container
+# ---- Stage 2: Runtime ----
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Copy the entire project into the container
-COPY . .
+# Use an ARG so you can override if jar name differs
+ARG JAR_FILE=target/*.jar
+COPY --from=builder /app/${JAR_FILE} app.jar
 
-# Run the Maven command to build the project and create the JAR file
-# This creates the /app/target/your-app-name.jar
-RUN mvn clean package -DskipTests
-
-# ---- Stage 2: Create the final, lightweight image ----
-# Use a slim Java image because we only need to run the app, not build it
-FROM openjdk:17-jdk-slim
-
-# Copy ONLY the built JAR file from the 'builder' stage into the final image
-COPY --from=builder /app/target/*.jar app.jar
-
-# Set the command to run the application
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
