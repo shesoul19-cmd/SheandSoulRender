@@ -130,7 +130,7 @@ public class MentalHealthAssistantService implements AssistantService {
 
     7.  **Medical Disclaimer:** You MUST NOT provide medical diagnoses or prescribe medication.
 
-    8.  **Closing Disclaimer:** You MUST end every response which is related to health with a clear disclaimer, for example: "Please remember, I am an AI assistant. For medical advice, please consult a healthcare professional."
+    8.  **Closing Disclaimer:** You MUST end every response with a clear disclaimer, for example: "Please remember, I am an AI assistant. For medical advice, please consult a healthcare professional."
 
     ---
     User Question for a user named %s: "%s"

@@ -3,8 +3,6 @@ package com.sheandsoul.v1update.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.cache.annotation.CacheEvict; // <-- ADD THIS IMPORT
-import org.springframework.cache.annotation.Cacheable;  // <-- ADD THIS IMPORT
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,19 +36,15 @@ public class NoteController {
         this.userDetailsService = userDetailsService;
     }
 
-    @PostMapping
-    // ✅ NEW: Clears the "userNotes" cache for this user
-    @CacheEvict(value = "userNotes", key = "#authentication.name")
+   @PostMapping
     public ResponseEntity<UserNoteDto> createNote(@Valid @RequestBody NoteRequestDto request, Authentication authentication) {
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
         UserNoteDto createdNote = noteService.createNote(currentUser.getId(), request);
         return new ResponseEntity<>(createdNote, HttpStatus.CREATED);
     }
-
+    
 
     @GetMapping
-    // ✅ NEW: Caches the result in "userNotes" using the user's email as the key
-    @Cacheable(value = "userNotes", key = "#authentication.name")
     public ResponseEntity<List<UserNoteDto>> getNotes(Authentication authentication) {
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
         List<UserNoteDto> notes = noteService.getNotesForUser(currentUser.getId());
@@ -58,8 +52,6 @@ public class NoteController {
     }
 
     @PutMapping("/{id}")
-    // ✅ NEW: Clears the "userNotes" cache for this user
-    @CacheEvict(value = "userNotes", key = "#authentication.name")
     public ResponseEntity<?> updateNote(@PathVariable Long id, @Valid @RequestBody NoteRequestDto request, Authentication authentication) {
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
         try {
@@ -73,8 +65,6 @@ public class NoteController {
     }
 
     @DeleteMapping("/{id}")
-    // ✅ NEW: Clears the "userNotes" cache for this user
-    @CacheEvict(value = "userNotes", key = "#authentication.name")
     public ResponseEntity<?> deleteNote(@PathVariable Long id, Authentication authentication) {
         User currentUser = userDetailsService.findUserByEmail(authentication.getName());
         try {
